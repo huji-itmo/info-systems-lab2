@@ -66,7 +66,8 @@ jobs:
       - name: Deploy via SCP
         env:
           SSHPASS: ${{ secrets.PASSWORD }}
-        run: sshpass -e scp -P "${{ secrets.PORT || 22 }}" backend/app/build/libs/*.war "${{ secrets.USERNAME }}@${{ secrets.HOST }}":~/info-systems-lab1/
+          DEPLOY_FOLDER: ~/info-systems-lab2
+        run: sshpass -e scp -P "${{ secrets.PORT || 22 }}" backend/app/build/libs/*.war "${{ secrets.USERNAME }}@${{ secrets.HOST }}":${{env.DEPLOY_FOLDER}}/
 
   deploy-run:
     needs: scp-war
@@ -84,19 +85,20 @@ jobs:
       - name: Run payara
         env:
           SSHPASS: ${{ secrets.PASSWORD }}
+          DEPLOY_FOLDER: ~/info-systems-lab2
         run: |
           sshpass -e ssh -p "${{ secrets.PORT || 22 }}" "${{ secrets.USERNAME }}@${{ secrets.HOST }}" \
           "pkill java 2>/dev/null || true; \
           export POSTGRES_USER=${{ secrets.POSTGRES_USER }}; \
           export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}; \
           export DB_HOST=pg; \
-          echo --port${{ secrets.DEPLOY_PORT || 8080 }} > ~/info-systems-lab1/payara.log; \
+          echo --port${{ secrets.DEPLOY_PORT || 8080 }} > ${{ env.DEPLOY_FOLDER }}/payara.log; \
           nohup java \
             -Dorg.example.level=INFO \
             -Xmx1024m \
             -Xms512m \
             -jar ~/payara-micro-6.2025.10.jar \
-            --deploy ~/info-systems-lab1/app.war \
+            --deploy ${{ env.DEPLOY_FOLDER }}/app.war \
             --port ${{ secrets.DEPLOY_PORT || 8080 }} \
             --contextroot "/" \
           > ~/info-systems-lab1/payara.log 2>&1 &"
