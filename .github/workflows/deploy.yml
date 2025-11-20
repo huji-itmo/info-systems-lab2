@@ -84,7 +84,7 @@ jobs:
 
       - name: Run payara
         env:
-          SSHPASS: ${{ secrets.PASSWORD }}
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
           DEPLOY_FOLDER: "~/info-systems-lab2"
         run: |
           sshpass -e ssh -p "${{ secrets.SSH_PORT || 22 }}" "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" \
