@@ -32,8 +32,8 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { SpaceMarine, useUpdateSpaceMarine } from "@/hooks/use-space-marine-hooks";
-import { CoordinateSelector } from "./coordinate-selector";
-import { ChapterSelector } from "./chapter-selector";
+import { CoordinateSelector } from "../coordinate/coordinate-selector";
+import { ChapterSelector } from "../chapter/chapter-selector";
 
 // Update schema to match SpaceMarine structure
 const spaceMarineSchema = z.object({

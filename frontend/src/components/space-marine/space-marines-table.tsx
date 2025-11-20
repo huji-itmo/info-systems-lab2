@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Pencil, Trash } from "lucide-react";
 import { SpaceMarine, useDeleteSpaceMarine, useSpaceMarines } from "@/hooks/use-space-marine-hooks";
 import { EditSpaceMarineDialog } from "./edit-space-marine-dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { Axios, AxiosError } from "axios";
 import { toast } from "sonner";
 

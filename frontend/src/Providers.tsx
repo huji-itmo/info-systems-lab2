@@ -2,9 +2,9 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
-import { Toaster } from "./ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
 
-// Create the QueryClient **inside** the Client Component
 function makeQueryClient() {
     return new QueryClient({
         defaultOptions: {
@@ -22,8 +22,15 @@ export function Providers({ children }: { children: ReactNode }) {
 
     return (
         <QueryClientProvider client={queryClient}>
-            {children}
-            <Toaster />
-        </QueryClientProvider>
+            <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+            >
+                {children}
+                <Toaster />
+            </ThemeProvider>
+        </QueryClientProvider >
     );
 }

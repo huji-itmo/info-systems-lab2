@@ -48,7 +48,9 @@ import { useChapters } from "@/hooks/use-chapter-hooks";
 import { Badge } from "@/components/ui/badge";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
-import { ChapterSelector } from "@/components/chapter-selector";
+import { ChapterSelector } from "@/components/chapter/chapter-selector";
+import { Label } from "@/components/ui/label";
+import { SpaceMarinesSelector } from "@/components/space-marine/space-marine-selector";
 
 export default function SpecialOperationsPage() {
   // Health stats state
@@ -58,7 +60,8 @@ export default function SpecialOperationsPage() {
   // Filter by weapons state
   const [selectedWeapons, setSelectedWeapons] = useState<WeaponType[]>([]);
   const [weaponPage, setWeaponPage] = useState(0);
-  const [weaponSize, setWeaponSize] = useState(10);
+
+  const weaponSize = 10;
 
   const {
     data: filteredMarines,
@@ -71,9 +74,6 @@ export default function SpecialOperationsPage() {
   const [chapterId, setChapterId] = useState("");
   const { mutate: assignMarine, isPending: isAssigning } = useAssignMarineToChapter();
 
-  // For assign dropdowns
-  const { data: allMarines } = useSpaceMarines(0, 100);
-  const { data: allChapters } = useChapters(0, 100);
 
   const handleAssign = () => {
     const marineNum = parseInt(marineId);
@@ -321,47 +321,22 @@ export default function SpecialOperationsPage() {
         <CardContent>
           <div className="gap-6 grid grid-cols-1 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="marineId" className="font-medium text-sm">Space Marine ID</label>
-              <Select
-                value={marineId}
-                onValueChange={setMarineId}
+              <Label className="font-medium text-sm">Space Marine ID</Label>
+              <SpaceMarinesSelector
+                onSelect={spaceMarine => setMarineId(spaceMarine.id.toString())}
+                selectedSpaceMarineId={Number(marineId)}
                 disabled={isAssigning}
-              >
-                <SelectTrigger id="marineId">
-                  <SelectValue placeholder="Select marine or enter ID" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allMarines?.content.map((marine) => (
-                    <SelectItem key={marine.id} value={marine.id.toString()}>
-                      {marine.name} (ID: {marine.id})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
 
-              <div className="relative mt-1">
-                <Input
-                  type="number"
-                  placeholder="Or enter marine ID manually"
-                  value={marineId}
-                  onChange={(e) => setMarineId(e.target.value)}
-                  disabled={isAssigning}
-                  min="1"
-                />
-                <span className="top-1/2 right-2 absolute text-muted-foreground text-sm -translate-y-1/2 transform">
-                  ID
-                </span>
-              </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="chapterId" className="font-medium text-sm">Chapter</label>
+              <Label className="font-medium text-sm">Chapter</Label>
               <ChapterSelector
                 onSelect={chapter => setChapterId(chapter.id.toString())}
                 selectedChapterId={Number(chapterId)}
                 disabled={isAssigning}
               />
-
             </div>
           </div>
 
