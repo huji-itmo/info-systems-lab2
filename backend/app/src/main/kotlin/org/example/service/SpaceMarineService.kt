@@ -8,11 +8,11 @@ import jakarta.transaction.Transactional
 import jakarta.validation.Valid
 import org.example.exceptions.NotFoundException
 import org.example.model.AstartesCategory
-import org.example.model.Page
+import org.example.model.dto.Page
 import org.example.model.SpaceMarine
 import org.example.model.Weapon
-import org.example.model.requests.SpaceMarineCreateRequest
-import org.example.model.requests.SpaceMarineUpdateRequest
+import org.example.model.dto.SpaceMarineCreateRequest
+import org.example.model.dto.SpaceMarineUpdateRequest
 import java.util.logging.Logger
 import kotlin.math.ceil
 

@@ -7,7 +7,7 @@ import jakarta.transaction.Transactional
 import jakarta.validation.Valid
 import org.example.exceptions.NotFoundException
 import org.example.model.Coordinates
-import org.example.model.Page
+import org.example.model.dto.Page
 import kotlin.math.ceil
 
 @ApplicationScoped

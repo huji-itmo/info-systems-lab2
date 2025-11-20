@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Space Marine Management API
   version: 1.0.0
-  description: API for managing Space Marines, their Coordinates, and Chapters with full CRUD, pagination support, and special operations.
+  description: API for managing Space Marines, their Coordinates, and Chapters with full CRUD, pagination support, special operations, embedded entities, and export capabilities.
 
 servers:
   - url: http://localhost:8080/api
@@ -124,8 +124,16 @@ paths:
                 $ref: "#/components/schemas/SpaceMarine"
         "404":
           description: Chapter or Space Marine not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "400":
           description: Invalid IDs provided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ================
   # SPACE MARINES
@@ -155,13 +163,35 @@ paths:
             maximum: 100
             default: 20
           description: Number of items per page (max 100)
+        - name: embed
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, coordinates, chapter]
+          description: |
+            Embed related entities. Supported values:
+            - `all`: Embed both coordinates and chapter
+            - `coordinates`: Embed only coordinates
+            - `chapter`: Embed only chapter
+          example: all
       responses:
         "200":
-          description: Paginated list of Space Marines
+          description: |
+            Paginated list of Space Marines. When `embed` parameter is used,
+            response contains embedded entities without IDs.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedSpaceMarineResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/PaginatedSpaceMarineResponse"
+                  - $ref: "#/components/schemas/PaginatedSpaceMarineEmbeddedResponse"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create a new Space Marine
       operationId: createSpaceMarine
@@ -180,6 +210,16 @@ paths:
                 $ref: "#/components/schemas/SpaceMarine"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Referenced Coordinates or Chapter not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /space-marines/{id}:
     get:
@@ -193,16 +233,35 @@ paths:
             type: integer
             format: int32
             minimum: 1
+        - name: embed
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, coordinates, chapter]
+          description: |
+            Embed related entities. Supported values:
+            - `all`: Embed both coordinates and chapter
+            - `coordinates`: Embed only coordinates
+            - `chapter`: Embed only chapter
+          example: all
       responses:
         "200":
-          description: Space Marine found
+          description: |
+            Space Marine found. When `embed` parameter is used,
+            response contains embedded entities without IDs.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SpaceMarine"
+                oneOf:
+                  - $ref: "#/components/schemas/SpaceMarine"
+                  - $ref: "#/components/schemas/SpaceMarineEmbedded"
         "404":
           description: Space Marine not found
-
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a Space Marine by ID
       operationId: updateSpaceMarine
@@ -229,9 +288,16 @@ paths:
                 $ref: "#/components/schemas/SpaceMarine"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
-          description: Space Marine not found
-
+          description: Space Marine or referenced entities not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a Space Marine by ID
       operationId: deleteSpaceMarine
@@ -248,6 +314,10 @@ paths:
           description: Space Marine deleted
         "404":
           description: Space Marine not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /space-marines/health/sum:
     get:
@@ -264,6 +334,12 @@ paths:
                 type: integer
                 format: int64
                 minimum: 0
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /space-marines/health/average:
     get:
@@ -280,6 +356,142 @@ paths:
                 type: number
                 format: double
                 minimum: 0
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /space-marines/export/json:
+    get:
+      summary: Export Space Marines as JSON
+      operationId: exportSpaceMarinesJson
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          description: Zero-based page index
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Number of items per page (max 1000 for exports)
+        - name: embed
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, coordinates, chapter]
+          description: |
+            Embed related entities in exported data. Supported values:
+            - `all`: Embed both coordinates and chapter
+            - `coordinates`: Embed only coordinates
+            - `chapter`: Embed only chapter
+      responses:
+        "200":
+          description: JSON file download with paginated Space Marines data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/SpaceMarine"
+                    - $ref: "#/components/schemas/SpaceMarineEmbedded"
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: "space_marines_page_0_size_1000.json"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /space-marines/export/xml:
+    get:
+      summary: Export Space Marines as XML
+      operationId: exportSpaceMarinesXml
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          description: Zero-based page index
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Number of items per page (max 1000 for exports)
+        - name: embed
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, coordinates, chapter]
+          description: |
+            Embed related entities in exported data. Supported values:
+            - `all`: Embed both coordinates and chapter
+            - `coordinates`: Embed only coordinates
+            - `chapter`: Embed only chapter
+      responses:
+        "200":
+          description: XML file download with paginated Space Marines data
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/SpaceMarine"
+                    - $ref: "#/components/schemas/SpaceMarineEmbedded"
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: "space_marines_page_0_size_1000.xml"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ============
   # COORDINATES
@@ -316,6 +528,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaginatedCoordinatesResponse"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create new Coordinates
       operationId: createCoordinates
@@ -334,6 +552,16 @@ paths:
                 $ref: "#/components/schemas/CoordinatesWithId"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /coordinates/{id}:
     get:
@@ -356,7 +584,10 @@ paths:
                 $ref: "#/components/schemas/CoordinatesWithId"
         "404":
           description: Coordinates not found
-
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update Coordinates by ID
       operationId: updateCoordinates
@@ -383,9 +614,16 @@ paths:
                 $ref: "#/components/schemas/CoordinatesWithId"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Coordinates not found
-
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete Coordinates by ID
       operationId: deleteCoordinates
@@ -402,6 +640,114 @@ paths:
           description: Coordinates deleted
         "404":
           description: Coordinates not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /coordinates/export/json:
+    get:
+      summary: Export Coordinates as JSON
+      operationId: exportCoordinatesJson
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          description: Zero-based page index
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Number of items per page (max 1000 for exports)
+      responses:
+        "200":
+          description: JSON file download with paginated Coordinates data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoordinatesWithId"
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: "coordinates_page_0_size_1000.json"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /coordinates/export/xml:
+    get:
+      summary: Export Coordinates as XML
+      operationId: exportCoordinatesXml
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          description: Zero-based page index
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Number of items per page (max 1000 for exports)
+      responses:
+        "200":
+          description: XML file download with paginated Coordinates data
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoordinatesWithId"
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: "coordinates_page_0_size_1000.xml"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # =========
   # CHAPTERS
@@ -438,6 +784,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaginatedChapterResponse"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create a new Chapter
       operationId: createChapter
@@ -456,6 +808,16 @@ paths:
                 $ref: "#/components/schemas/ChapterWithId"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /chapters/{id}:
     get:
@@ -478,7 +840,10 @@ paths:
                 $ref: "#/components/schemas/ChapterWithId"
         "404":
           description: Chapter not found
-
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a Chapter by ID
       operationId: updateChapter
@@ -505,9 +870,16 @@ paths:
                 $ref: "#/components/schemas/ChapterWithId"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Chapter not found
-
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a Chapter by ID
       operationId: deleteChapter
@@ -524,6 +896,114 @@ paths:
           description: Chapter deleted
         "404":
           description: Chapter not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /chapters/export/json:
+    get:
+      summary: Export Chapters as JSON
+      operationId: exportChaptersJson
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          description: Zero-based page index
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Number of items per page (max 1000 for exports)
+      responses:
+        "200":
+          description: JSON file download with paginated Chapters data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChapterWithId"
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: "chapters_page_0_size_1000.json"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /chapters/export/xml:
+    get:
+      summary: Export Chapters as XML
+      operationId: exportChaptersXml
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          description: Zero-based page index
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Number of items per page (max 1000 for exports)
+      responses:
+        "200":
+          description: XML file download with paginated Chapters data
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChapterWithId"
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: "chapters_page_0_size_1000.xml"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
@@ -619,6 +1099,37 @@ components:
           format: int32
           minimum: 0
 
+    # === EMBEDDED PAGINATION WRAPPER ===
+    PaginatedSpaceMarineEmbeddedResponse:
+      type: object
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpaceMarineEmbedded"
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          minimum: 0
+
     # === SPACE MARINE ===
 
     SpaceMarine:
@@ -672,6 +1183,55 @@ components:
           type: string
           enum: [BOLTGUN, HEAVY_BOLTGUN, FLAMER, HEAVY_FLAMER, MULTI_MELTA]
           description: Type of weapon used by the Space Marine
+
+    # === EMBEDDED SPACE MARINE ===
+    SpaceMarineEmbedded:
+      type: object
+      required:
+        - id
+        - name
+        - creationDate
+        - health
+        - weaponType
+        - coordinates
+        - chapter
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Unique auto-generated ID (> 0)
+        name:
+          type: string
+          minLength: 1
+          description: Non-empty, non-null name
+        creationDate:
+          type: string
+          format: date-time
+          description: Auto-generated creation timestamp
+        health:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Health must be > 0
+        loyal:
+          type: boolean
+          nullable: true
+        category:
+          type: string
+          nullable: true
+          enum: [AGGRESSOR, INCEPTOR, TACTICAL, CHAPLAIN, APOTHECARY]
+          description: Astartes category
+        weaponType:
+          type: string
+          enum: [BOLTGUN, HEAVY_BOLTGUN, FLAMER, HEAVY_FLAMER, MULTI_MELTA]
+          description: Type of weapon used by the Space Marine
+        coordinates:
+          $ref: "#/components/schemas/Coordinates"
+          description: Embedded coordinates data without ID
+        chapter:
+          $ref: "#/components/schemas/Chapter"
+          description: Embedded chapter data without ID
 
     SpaceMarineCreateRequest:
       type: object
@@ -748,12 +1308,12 @@ components:
         x:
           type: integer
           format: int64
-          description: X coordinate
+          description: X coordinate value
         y:
           type: number
           format: float
           maximum: 343
-          description: Y coordinate (must be ≤ 343)
+          description: Y coordinate value (must be ≤ 343)
 
     CoordinatesWithId:
       allOf:
@@ -779,7 +1339,7 @@ components:
         name:
           type: string
           minLength: 1
-          description: Non-empty, non-null name of the Chapter
+          description: Name of the Chapter
         marinesCount:
           type: integer
           format: int64
@@ -804,6 +1364,9 @@ components:
 
     ErrorResponse:
       type: object
+      required:
+        - error
+        - timestamp
       properties:
         error:
           type: string

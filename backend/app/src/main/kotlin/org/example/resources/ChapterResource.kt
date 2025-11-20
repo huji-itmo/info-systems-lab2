@@ -1,5 +1,8 @@
 package org.example.resources
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.validation.Valid
@@ -17,9 +20,10 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.example.exceptions.NotFoundException
 import org.example.model.Chapter
-import org.example.model.Page
+import org.example.model.dto.Page
 import org.example.service.ChapterService
 import java.util.logging.Logger
+import jakarta.ws.rs.core.StreamingOutput
 
 @Path("/chapters")
 @Produces(MediaType.APPLICATION_JSON)
@@ -90,5 +94,75 @@ open class ChapterResource {
             throw e
         }
         return Response.status(Response.Status.NO_CONTENT).build()
+    }
+
+    // Add these imports at the top
+
+
+    // Add these methods to ChapterResource class
+    @GET
+    @Path("/export/json")
+    @Produces(MediaType.APPLICATION_JSON)
+    fun exportJson(
+        @QueryParam("page") @DefaultValue("0") page: Int,
+        @QueryParam("size") @DefaultValue("1000") size: Int
+    ): Response {
+        validateExportPageSize(page, size)
+        val pageResult = service.findAll(page, size)
+
+        return createExportResponse(
+            data = pageResult.content,
+            filename = "chapters_page_${page}_size_${size}.json",
+            contentType = MediaType.APPLICATION_JSON
+        )
+    }
+
+    @GET
+    @Path("/export/xml")
+    @Produces(MediaType.APPLICATION_XML)
+    fun exportXml(
+        @QueryParam("page") @DefaultValue("0") page: Int,
+        @QueryParam("size") @DefaultValue("1000") size: Int
+    ): Response {
+        validateExportPageSize(page, size)
+        val pageResult = service.findAll(page, size)
+
+        return createExportResponse(
+            data = pageResult.content,
+            filename = "chapters_page_${page}_size_${size}.xml",
+            contentType = MediaType.APPLICATION_XML
+        )
+    }
+
+    private fun validateExportPageSize(page: Int, size: Int) {
+        require(page >= 0) { "Page must be >= 0" }
+        require(size in 1..1000) { "Size must be between 1 and 1000 for exports" }
+    }
+
+    private fun <T> createExportResponse(
+        data: List<T>,
+        filename: String,
+        contentType: String
+    ): Response {
+        val streamingOutput = StreamingOutput { output ->
+            when (contentType) {
+                MediaType.APPLICATION_JSON -> {
+                    val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+                    mapper.writeValue(output, data)
+                }
+
+                MediaType.APPLICATION_XML -> {
+                    val xmlMapper = XmlMapper()
+                    xmlMapper.writeValue(output, data)
+                }
+
+                else -> throw IllegalArgumentException("Unsupported content type: $contentType")
+            }
+        }
+
+        return Response.ok(streamingOutput)
+            .header("Content-Disposition", "attachment; filename=\"$filename\"")
+            .header("Content-Type", contentType)
+            .build()
     }
 }

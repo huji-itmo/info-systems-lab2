@@ -6,7 +6,7 @@ import jakarta.ws.rs.core.UriInfo
 import jakarta.ws.rs.ext.ExceptionMapper
 import jakarta.ws.rs.ext.Provider
 import org.example.exceptions.NotFoundException
-import org.example.model.ErrorResponse
+import org.example.model.dto.ErrorResponse
 
 @Provider
 class NotFoundExceptionMapper : ExceptionMapper<NotFoundException> {

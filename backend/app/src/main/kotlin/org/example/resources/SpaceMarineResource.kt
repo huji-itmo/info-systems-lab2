@@ -1,5 +1,8 @@
 package org.example.resources
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.validation.Valid
@@ -15,11 +18,13 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.StreamingOutput
 import org.example.exceptions.NotFoundException
-import org.example.model.Page
+import org.example.model.dto.Page
 import org.example.model.SpaceMarine
-import org.example.model.requests.SpaceMarineCreateRequest
-import org.example.model.requests.SpaceMarineUpdateRequest
+import org.example.model.dto.SpaceMarineCreateRequest
+import org.example.model.dto.SpaceMarineUpdateRequest
+import org.example.model.dto.toEmbedded
 import org.example.service.ChapterService
 import org.example.service.CoordinatesService
 import org.example.service.SpaceMarineService
@@ -43,15 +48,65 @@ open class SpaceMarineResource {
         private val logger = Logger.getLogger(SpaceMarineResource::class.java.name)
     }
 
+
+    @GET
+    @Path("/{id}")
+    open fun getById(
+        @PathParam("id") id: Int,
+        @QueryParam("embed") embed: String? = null // Accepts "all" or comma-separated values
+    ): Any {
+        val spaceMarine = spaceMarineService.findById(id)
+
+        // Parse embed parameter
+        val embedSet = parseEmbedParam(embed)
+
+        // Return embedded version if requested
+        if (embedSet.contains("all") || embedSet.contains("coordinates") || embedSet.contains("chapter")) {
+            val coordinates = coordinatesService.findById(spaceMarine.coordinatesId)
+            val chapter = chapterService.findById(spaceMarine.chapterId)
+            return spaceMarine.toEmbedded(coordinates, chapter)
+        }
+
+        // Default behavior - return standard entity
+        return spaceMarine
+    }
+
     @GET
     open fun getAll(
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
-    ): Page<SpaceMarine> {
-        logger.info("getAll called with page=$page, size=$size")
+        @QueryParam("embed") embed: String? = null
+    ): Any {
+        logger.info("getAll called with page=$page, size=$size, embed=$embed")
         require(page >= 0) { "page must be >= 0" }
         require(size in 1..100) { "size must be between 1 and 100" }
-        return spaceMarineService.findAll(page, size)
+
+        val pageResult = spaceMarineService.findAll(page, size)
+        val embedSet = parseEmbedParam(embed)
+
+        // Return embedded version if requested
+        if (embedSet.contains("all") || embedSet.contains("coordinates") || embedSet.contains("chapter")) {
+            val embeddedContent = pageResult.content.map { spaceMarine ->
+                val coordinates = coordinatesService.findById(spaceMarine.coordinatesId)
+                val chapter = chapterService.findById(spaceMarine.chapterId)
+                spaceMarine.toEmbedded(coordinates, chapter)
+            }
+            return Page(
+                content = embeddedContent,
+                totalElements = pageResult.totalElements,
+                totalPages = pageResult.totalPages,
+                page = pageResult.page,
+                size = pageResult.size
+            )
+        }
+
+        // Default behavior
+        return pageResult
+    }
+
+    // Helper to parse embed parameter
+    private fun parseEmbedParam(embed: String?): Set<String> {
+        return embed?.split(",")?.map { it.trim().lowercase() }?.toSet() ?: emptySet()
     }
 
     @POST
@@ -61,8 +116,8 @@ open class SpaceMarineResource {
         logger.info("Received create request: $spaceMarine")
         logger.info(
             "Name: ${spaceMarine.name}, " +
-                "CoordinatesId: ${spaceMarine.coordinatesId}, " +
-                "Weapon: ${spaceMarine.weaponType}",
+                    "CoordinatesId: ${spaceMarine.coordinatesId}, " +
+                    "Weapon: ${spaceMarine.weaponType}",
         )
 
         // Validate existence of referenced entities
@@ -72,27 +127,6 @@ open class SpaceMarineResource {
         )
 
         return spaceMarineService.create(spaceMarine)
-    }
-
-    @GET
-    @Path("/{id}")
-    open fun getById(
-        @PathParam("id") id: Int,
-    ): SpaceMarine = spaceMarineService.findById(id)
-
-    @PUT
-    @Path("/{id}")
-    open fun update(
-        @PathParam("id") id: Int,
-        @Valid update: SpaceMarineUpdateRequest,
-    ): SpaceMarine {
-        logger.info("UPDATE REQUEST for ID $id: $update")
-        // Validate existence of referenced entities only if provided in update
-        validateCoordinatesAndChapter(
-            coordinatesId = update.coordinatesId,
-            chapterId = update.chapterId,
-        )
-        return spaceMarineService.update(id, update)
     }
 
     @DELETE
@@ -136,5 +170,71 @@ open class SpaceMarineResource {
     fun calculateHealthAverage(): Double {
         logger.info("Handling health average request")
         return spaceMarineService.averageHealth()
+    }
+
+    @GET
+    @Path("/export/json")
+    @Produces(MediaType.APPLICATION_JSON)
+    fun exportJson(
+        @QueryParam("page") @DefaultValue("0") page: Int,
+        @QueryParam("size") @DefaultValue("1000") size: Int
+    ): Response {
+        validateExportPageSize(page, size)
+        val pageResult = spaceMarineService.findAll(page, size)
+
+        return createExportResponse(
+            data = pageResult.content,
+            filename = "space_marines_page_${page}_size_${size}.json",
+            contentType = MediaType.APPLICATION_JSON
+        )
+    }
+
+    @GET
+    @Path("/export/xml")
+    @Produces(MediaType.APPLICATION_XML)
+    fun exportXml(
+        @QueryParam("page") @DefaultValue("0") page: Int,
+        @QueryParam("size") @DefaultValue("1000") size: Int
+    ): Response {
+        validateExportPageSize(page, size)
+        val pageResult = spaceMarineService.findAll(page, size)
+
+        return createExportResponse(
+            data = pageResult.content,
+            filename = "space_marines_page_${page}_size_${size}.xml",
+            contentType = MediaType.APPLICATION_XML
+        )
+    }
+
+    private fun validateExportPageSize(page: Int, size: Int) {
+        require(page >= 0) { "Page must be >= 0" }
+        require(size in 1..1000) { "Size must be between 1 and 1000 for exports" }
+    }
+
+    private fun <T> createExportResponse(
+        data: List<T>,
+        filename: String,
+        contentType: String
+    ): Response {
+        val streamingOutput = StreamingOutput { output ->
+            when (contentType) {
+                MediaType.APPLICATION_JSON -> {
+                    val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+                    mapper.writeValue(output, data)
+                }
+
+                MediaType.APPLICATION_XML -> {
+                    val xmlMapper = XmlMapper()
+                    xmlMapper.writeValue(output, data)
+                }
+
+                else -> throw IllegalArgumentException("Unsupported content type: $contentType")
+            }
+        }
+
+        return Response.ok(streamingOutput)
+            .header("Content-Disposition", "attachment; filename=\"$filename\"")
+            .header("Content-Type", contentType)
+            .build()
     }
 }

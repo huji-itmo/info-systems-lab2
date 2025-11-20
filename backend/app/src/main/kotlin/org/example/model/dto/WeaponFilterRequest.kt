@@ -1,4 +1,4 @@
-package org.example.model.requests
+package org.example.model.dto
 
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

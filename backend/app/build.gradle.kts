@@ -26,10 +26,13 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
-
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
+    implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.20.1")
 
     // Jersey-Jackson integration for Payara Micro
     implementation("org.glassfish.jersey.media:jersey-media-json-jackson:3.1.0")
+
+
 }
 
 testing {
