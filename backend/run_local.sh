@@ -22,7 +22,7 @@ fi
 
 java -Xmx1024m -Xms512m \
     -Djava.net.preferIPv4Stack=true \
-    -Dorg.example.level=INFO \
+    -Dorg.example.level=FINE \
     -jar ${JAR_NAME} \
     --deploy app/build/libs/app.war \
     --port 8080 \

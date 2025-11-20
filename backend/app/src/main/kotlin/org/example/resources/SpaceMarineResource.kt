@@ -1,11 +1,14 @@
 package org.example.resources
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.validation.Valid
+import jakarta.validation.Validator
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.DefaultValue
@@ -16,19 +19,29 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
+import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.StreamingOutput
 import org.example.exceptions.NotFoundException
+import org.example.model.Chapter
+import org.example.model.Coordinates
 import org.example.model.dto.Page
 import org.example.model.SpaceMarine
+import org.example.model.dto.ImportResult
+import org.example.model.dto.ImportSummary
 import org.example.model.dto.SpaceMarineCreateRequest
+import org.example.model.dto.SpaceMarineImportRequest
 import org.example.model.dto.SpaceMarineUpdateRequest
 import org.example.model.dto.createExportResponse
 import org.example.model.dto.toEmbedded
 import org.example.service.ChapterService
 import org.example.service.CoordinatesService
 import org.example.service.SpaceMarineService
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition
+import org.glassfish.jersey.media.multipart.FormDataParam
+import java.io.InputStream
 import java.util.logging.Logger
 
 @Path("/space-marines")
@@ -44,6 +57,10 @@ open class SpaceMarineResource {
 
     @Inject
     private lateinit var chapterService: ChapterService
+
+    @Inject
+    private lateinit var validator: Validator
+
 
     companion object {
         private val logger = Logger.getLogger(SpaceMarineResource::class.java.name)
@@ -236,4 +253,171 @@ open class SpaceMarineResource {
         require(size in 1..1000) { "Size must be between 1 and 1000 for exports" }
     }
 
+
+    @POST
+    @Path("/import")
+    @Consumes(MULTIPART_FORM_DATA)
+    fun importSpaceMarines(
+        @FormDataParam("file") fileInputStream: InputStream,
+        @FormDataParam("file") fileDetail: FormDataContentDisposition
+    ): Response {
+        logger.info("Import request received for file: ${fileDetail.fileName}")
+
+        try {
+            val contentType = determineContentType(fileDetail.fileName)
+            val importRequests = parseFile(fileInputStream, contentType)
+
+            logger.info("Parsed ${importRequests.size} Space Marine records from file")
+            validateImportRequests(importRequests)
+
+            val results = importRequests.map { request ->
+                try {
+                    processImportRequest(request)
+                    ImportResult.Success(request.name)
+                } catch (e: Exception) {
+                    logger.warning("Failed to import ${request.name}: ${e.message}")
+                    ImportResult.Failure(request.name, e.message ?: "Unknown error")
+                }
+            }
+
+            val summary = ImportSummary(
+                total = results.size,
+                successful = results.count { it is ImportResult.Success },
+                failed = results.filterIsInstance<ImportResult.Failure>()
+            )
+
+            return Response.status(Response.Status.CREATED)
+                .entity(summary)
+                .build()
+
+        } catch (e: Exception) {
+            logger.severe("Import failed: ${e.message}")
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(mapOf("error" to "Import failed: ${e.message}"))
+                .build()
+        }
+    }
+
+    private fun determineContentType(filename: String): String {
+        return when {
+            filename.endsWith(".json", ignoreCase = true) -> MediaType.APPLICATION_JSON
+            filename.endsWith(".xml", ignoreCase = true) -> MediaType.APPLICATION_XML
+            else -> throw WebApplicationException("Unsupported file type. Only JSON and XML files are accepted.",
+                Response.Status.BAD_REQUEST
+            ) as Throwable
+        }
+    }
+
+    private fun parseFile(inputStream: InputStream, contentType: String): List<SpaceMarineImportRequest> {
+        return when (contentType) {
+            MediaType.APPLICATION_JSON -> {
+                val mapper = ObjectMapper().registerKotlinModule()
+                mapper.readValue(inputStream, object : TypeReference<List<SpaceMarineImportRequest>>() {})
+            }
+            MediaType.APPLICATION_XML -> {
+                val xmlMapper = XmlMapper().registerKotlinModule()
+                xmlMapper.readValue(inputStream, object : TypeReference<List<SpaceMarineImportRequest>>() {})
+            }
+            else -> throw IllegalArgumentException("Unsupported content type: $contentType")
+        }
+    }
+
+    private fun validateImportRequests(requests: List<SpaceMarineImportRequest>) {
+        if (requests.isEmpty()) {
+            throw WebApplicationException("File contains no records to import", Response.Status.BAD_REQUEST)
+        }
+
+        val errors = mutableListOf<String>()
+
+        requests.forEachIndexed { index, request ->
+            val violations = validator.validate(request)
+            if (violations.isNotEmpty()) {
+                errors.add("Record ${index + 1} (${request.name}): ${violations.joinToString { it.message }}")
+            }
+
+            // Validate coordinates references
+            if (request.coordinatesId == null && request.coordinates == null) {
+                errors.add("Record ${index + 1} (${request.name}): Must provide either coordinatesId or coordinates object")
+            }
+            if (request.coordinatesId != null && request.coordinates != null) {
+                errors.add("Record ${index + 1} (${request.name}): Cannot provide both coordinatesId and coordinates object")
+            }
+
+            // Validate chapter references
+            if (request.chapterId == null && request.chapter == null) {
+                errors.add("Record ${index + 1} (${request.name}): Must provide either chapterId or chapter object")
+            }
+            if (request.chapterId != null && request.chapter != null) {
+                errors.add("Record ${index + 1} (${request.name}): Cannot provide both chapterId and chapter object")
+            }
+        }
+
+        if (errors.isNotEmpty()) {
+            throw WebApplicationException(
+                "Validation failed:\n${errors.joinToString("\n")}",
+                Response.Status.BAD_REQUEST
+            ) as Throwable
+        }
+    }
+
+    private fun processImportRequest(request: SpaceMarineImportRequest): SpaceMarine {
+        // Resolve coordinates
+        val coordinatesId = when {
+            request.coordinatesId != null -> {
+                // Validate existing coordinates
+                try {
+                    coordinatesService.findById(request.coordinatesId).id
+                } catch (e: NotFoundException) {
+                    throw NotFoundException("Coordinates ID ${request.coordinatesId} not found for ${request.name}")
+                }
+            }
+            request.coordinates != null -> {
+                // Create new coordinates
+                val newCoords = coordinatesService.create(
+                    Coordinates(
+                        x = request.coordinates.x,
+                        y = request.coordinates.y
+                    )
+                )
+                newCoords.id
+            }
+            else -> throw IllegalArgumentException("No coordinates reference provided for ${request.name}")
+        }
+
+        // Resolve chapter
+        val chapterId = when {
+            request.chapterId != null -> {
+                // Validate existing chapter
+                try {
+                    chapterService.findById(request.chapterId).id
+                } catch (e: NotFoundException) {
+                    throw NotFoundException("Chapter ID ${request.chapterId} not found for ${request.name}")
+                }
+            }
+            request.chapter != null -> {
+                // Create new chapter
+                val newChapter = chapterService.create(
+                    Chapter(
+                        name = request.chapter.name,
+                        marinesCount = request.chapter.marinesCount
+                    )
+                )
+                newChapter.id
+            }
+            else -> throw IllegalArgumentException("No chapter reference provided for ${request.name}")
+        }
+
+        // Create space marine
+        return spaceMarineService.create(
+            SpaceMarineCreateRequest(
+                name = request.name,
+                coordinatesId = coordinatesId,
+                chapterId = chapterId,
+                health = request.health,
+                loyal = request.loyal,
+                category = request.category.toString(),
+                weaponType = request.weaponType.toString()
+            )
+        )
+    }
 }

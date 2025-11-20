@@ -493,6 +493,61 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /space-marines/import:
+    post:
+      summary: Import Space Marines from file
+      operationId: importSpaceMarines
+      description: |
+        Import Space Marines from a JSON or XML file. The file must contain an array of Space Marine records.
+        Each record can reference existing coordinates/chapters by ID OR define new coordinates/chapter objects to create.
+        Returns a summary of the import operation with counts of successful and failed imports.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    JSON or XML file containing Space Marines data.
+                    Supported extensions: .json, .xml
+      responses:
+        "201":
+          description: Import completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportSummary"
+        "400":
+          description: |
+            Invalid request - possible reasons:
+            - Unsupported file type (only .json and .xml allowed)
+            - Empty file
+            - Validation errors in the data
+            - Conflicting coordinate/chapter references
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: |
+            Referenced entity not found - possible reasons:
+            - Coordinates ID not found
+            - Chapter ID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error during import processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # ============
   # COORDINATES
   # ============
@@ -1359,6 +1414,96 @@ components:
               format: int64
               minimum: 1
               description: Unique auto-generated ID
+
+    # === IMPORT SCHEMAS ===
+
+    SpaceMarineImportRequest:
+      type: object
+      required:
+        - name
+        - health
+        - weaponType
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Name of the Space Marine
+        coordinatesId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: |
+            ID of existing coordinates (mutually exclusive with coordinates parameter).
+            Use this to reference coordinates that already exist in the system.
+        coordinates:
+          $ref: "#/components/schemas/Coordinates"
+          description: |
+            New coordinates to create (mutually exclusive with coordinatesId parameter).
+            Use this to define new coordinates that will be created during import.
+        chapterId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: |
+            ID of existing chapter (mutually exclusive with chapter parameter).
+            Use this to reference chapters that already exist in the system.
+        chapter:
+          $ref: "#/components/schemas/Chapter"
+          description: |
+            New chapter to create (mutually exclusive with chapterId parameter).
+            Use this to define new chapters that will be created during import.
+        health:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Health value of the Space Marine
+        loyal:
+          type: boolean
+          nullable: true
+          description: Loyalty status
+        category:
+          type: string
+          nullable: true
+          enum: [AGGRESSOR, INCEPTOR, TACTICAL, CHAPLAIN, APOTHECARY]
+          description: Astartes category
+        weaponType:
+          type: string
+          enum: [BOLTGUN, HEAVY_BOLTGUN, FLAMER, HEAVY_FLAMER, MULTI_MELTA]
+          description: Type of weapon used by the Space Marine
+
+    ImportFailure:
+      type: object
+      required:
+        - name
+        - reason
+      properties:
+        name:
+          type: string
+          description: Name of the Space Marine that failed to import
+        reason:
+          type: string
+          description: Reason for import failure
+
+    ImportSummary:
+      type: object
+      required:
+        - total
+        - successful
+        - failed
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of records processed
+        successful:
+          type: integer
+          minimum: 0
+          description: Number of successfully imported records
+        failed:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportFailure"
+          description: List of failed imports with detailed reasons
 
     # === ERROR RESPONSES ===
 

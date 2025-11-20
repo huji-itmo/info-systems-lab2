@@ -60,11 +60,14 @@ open class SpaceMarineService {
         val category =
             spaceMarine.category?.let {
                 try {
+                    if (it == "null") {
+                        return@let null
+                    }
                     AstartesCategory.valueOf(it.uppercase())
                 } catch (e: IllegalArgumentException) {
                     throw IllegalArgumentException(
                         "Invalid category value: $it. " +
-                            "Valid values are: ${AstartesCategory.values().joinToString()}",
+                            "Valid values are: ${AstartesCategory.entries.joinToString()}",
                     )
                 }
             }
@@ -75,7 +78,7 @@ open class SpaceMarineService {
             } catch (e: IllegalArgumentException) {
                 throw IllegalArgumentException(
                     "Invalid weapon type: ${spaceMarine.weaponType}. " +
-                        "Valid values are: ${Weapon.values().joinToString()}",
+                        "Valid values are: ${Weapon.entries.joinToString()}",
                 )
             }
 

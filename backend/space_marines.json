@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Marneus Calgar",
+    "coordinates": {
+      "x": 500,
+      "y": 250.5
+    },
+    "chapter": {
+      "name": "Ultramarines",
+      "marinesCount": 999
+    },
+    "health": 1000,
+    "loyal": true,
+    "category": "TACTICAL",
+    "weaponType": "FLAMER"
+  },
+  {
+    "name": "Cato Sicarius",
+    "coordinatesId": 1,
+    "chapterId": 1,
+    "health": 950,
+    "category": "TACTICAL",
+    "weaponType": "BOLTGUN"
+  }
+]
