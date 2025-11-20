@@ -44,3 +44,5 @@ next-env.d.ts
 **.gradle/
 
 **/payara-micro-**.jar
+
+**/.idea
