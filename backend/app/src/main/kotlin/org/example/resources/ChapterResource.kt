@@ -24,6 +24,7 @@ import org.example.model.dto.Page
 import org.example.service.ChapterService
 import java.util.logging.Logger
 import jakarta.ws.rs.core.StreamingOutput
+import org.example.model.dto.createExportResponse
 
 @Path("/chapters")
 @Produces(MediaType.APPLICATION_JSON)
@@ -139,30 +140,4 @@ open class ChapterResource {
         require(size in 1..1000) { "Size must be between 1 and 1000 for exports" }
     }
 
-    private fun <T> createExportResponse(
-        data: List<T>,
-        filename: String,
-        contentType: String
-    ): Response {
-        val streamingOutput = StreamingOutput { output ->
-            when (contentType) {
-                MediaType.APPLICATION_JSON -> {
-                    val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-                    mapper.writeValue(output, data)
-                }
-
-                MediaType.APPLICATION_XML -> {
-                    val xmlMapper = XmlMapper()
-                    xmlMapper.writeValue(output, data)
-                }
-
-                else -> throw IllegalArgumentException("Unsupported content type: $contentType")
-            }
-        }
-
-        return Response.ok(streamingOutput)
-            .header("Content-Disposition", "attachment; filename=\"$filename\"")
-            .header("Content-Type", contentType)
-            .build()
-    }
 }

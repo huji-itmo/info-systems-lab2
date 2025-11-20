@@ -31,8 +31,6 @@ dependencies {
 
     // Jersey-Jackson integration for Payara Micro
     implementation("org.glassfish.jersey.media:jersey-media-json-jackson:3.1.0")
-
-
 }
 
 testing {

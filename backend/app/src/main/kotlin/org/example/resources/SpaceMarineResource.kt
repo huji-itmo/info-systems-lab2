@@ -24,6 +24,7 @@ import org.example.model.dto.Page
 import org.example.model.SpaceMarine
 import org.example.model.dto.SpaceMarineCreateRequest
 import org.example.model.dto.SpaceMarineUpdateRequest
+import org.example.model.dto.createExportResponse
 import org.example.model.dto.toEmbedded
 import org.example.service.ChapterService
 import org.example.service.CoordinatesService
@@ -177,13 +178,25 @@ open class SpaceMarineResource {
     @Produces(MediaType.APPLICATION_JSON)
     fun exportJson(
         @QueryParam("page") @DefaultValue("0") page: Int,
-        @QueryParam("size") @DefaultValue("1000") size: Int
+        @QueryParam("size") @DefaultValue("1000") size: Int,
+        @QueryParam("embed") embed: String? = null
     ): Response {
         validateExportPageSize(page, size)
-        val pageResult = spaceMarineService.findAll(page, size)
+
+        // Get data based on embed parameter
+        val data = if (parseEmbedParam(embed).isNotEmpty()) {
+            val pageResult = spaceMarineService.findAll(page, size)
+            pageResult.content.map { spaceMarine ->
+                val coordinates = coordinatesService.findById(spaceMarine.coordinatesId)
+                val chapter = chapterService.findById(spaceMarine.chapterId)
+                spaceMarine.toEmbedded(coordinates, chapter)
+            }
+        } else {
+            spaceMarineService.findAll(page, size).content
+        }
 
         return createExportResponse(
-            data = pageResult.content,
+            data = data,
             filename = "space_marines_page_${page}_size_${size}.json",
             contentType = MediaType.APPLICATION_JSON
         )
@@ -194,13 +207,25 @@ open class SpaceMarineResource {
     @Produces(MediaType.APPLICATION_XML)
     fun exportXml(
         @QueryParam("page") @DefaultValue("0") page: Int,
-        @QueryParam("size") @DefaultValue("1000") size: Int
+        @QueryParam("size") @DefaultValue("1000") size: Int,
+        @QueryParam("embed") embed: String? = null
     ): Response {
         validateExportPageSize(page, size)
-        val pageResult = spaceMarineService.findAll(page, size)
+
+        // Get data based on embed parameter
+        val data = if (parseEmbedParam(embed).isNotEmpty()) {
+            val pageResult = spaceMarineService.findAll(page, size)
+            pageResult.content.map { spaceMarine ->
+                val coordinates = coordinatesService.findById(spaceMarine.coordinatesId)
+                val chapter = chapterService.findById(spaceMarine.chapterId)
+                spaceMarine.toEmbedded(coordinates, chapter)
+            }
+        } else {
+            spaceMarineService.findAll(page, size).content
+        }
 
         return createExportResponse(
-            data = pageResult.content,
+            data = data,
             filename = "space_marines_page_${page}_size_${size}.xml",
             contentType = MediaType.APPLICATION_XML
         )
@@ -211,30 +236,4 @@ open class SpaceMarineResource {
         require(size in 1..1000) { "Size must be between 1 and 1000 for exports" }
     }
 
-    private fun <T> createExportResponse(
-        data: List<T>,
-        filename: String,
-        contentType: String
-    ): Response {
-        val streamingOutput = StreamingOutput { output ->
-            when (contentType) {
-                MediaType.APPLICATION_JSON -> {
-                    val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-                    mapper.writeValue(output, data)
-                }
-
-                MediaType.APPLICATION_XML -> {
-                    val xmlMapper = XmlMapper()
-                    xmlMapper.writeValue(output, data)
-                }
-
-                else -> throw IllegalArgumentException("Unsupported content type: $contentType")
-            }
-        }
-
-        return Response.ok(streamingOutput)
-            .header("Content-Disposition", "attachment; filename=\"$filename\"")
-            .header("Content-Type", contentType)
-            .build()
-    }
 }
