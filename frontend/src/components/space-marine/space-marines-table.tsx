@@ -236,6 +236,7 @@ export function SpaceMarinesTable({ pageSize = 10 }: SpaceMarinesTableProps) {
               <TableHead>ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Chapter</TableHead>
+              <TableHead>Coordinates</TableHead>
               <TableHead>Weapon</TableHead>
               <TableHead>Health</TableHead>
               <TableHead>Loyal</TableHead>
@@ -263,6 +264,7 @@ export function SpaceMarinesTable({ pageSize = 10 }: SpaceMarinesTableProps) {
                     <TableCell className="font-mono">{marine.id}</TableCell>
                     <TableCell>{marine.name}</TableCell>
                     <TableCell className="font-mono">{marine.chapterId}</TableCell>
+                    <TableCell className="font-mono">{marine.coordinatesId}</TableCell>
                     <TableCell>{marine.weaponType}</TableCell>
                     <TableCell>{marine.health}</TableCell>
                     <TableCell>
