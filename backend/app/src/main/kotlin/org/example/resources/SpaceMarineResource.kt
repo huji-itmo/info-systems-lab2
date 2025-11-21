@@ -89,6 +89,22 @@ open class SpaceMarineResource {
         return spaceMarine
     }
 
+    @PUT
+    @Path("/{id}")
+    open fun update(
+        @PathParam("id") id: Int,
+        @Valid update: SpaceMarineUpdateRequest,
+    ): SpaceMarine {
+        logger.info("UPDATE REQUEST for ID $id: $update")
+        // Validate existence of referenced entities only if provided in update
+        validateCoordinatesAndChapter(
+            coordinatesId = update.coordinatesId,
+            chapterId = update.chapterId,
+        )
+        return spaceMarineService.update(id, update)
+    }
+
+
     @GET
     open fun getAll(
         @QueryParam("page") @DefaultValue("0") page: Int,
