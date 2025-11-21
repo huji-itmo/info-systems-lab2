@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSpaceMarinesDownload } from "@/hooks/use-space-marines-download";
+import { ImportSpaceMarinesDialog } from "./import-space-marines-dialog";
 
 interface SpaceMarinesTableProps {
   pageSize?: number;
@@ -126,7 +127,8 @@ export function SpaceMarinesTable({ pageSize = 10 }: SpaceMarinesTableProps) {
   return (
     <div className="space-y-4">
       {/* Export Controls */}
-      <div className="flex justify-end">
+      <div className="flex justify-between">
+        <ImportSpaceMarinesDialog />
         <Dialog open={isDownloadDialogOpen} onOpenChange={setIsDownloadDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" className="gap-2">
