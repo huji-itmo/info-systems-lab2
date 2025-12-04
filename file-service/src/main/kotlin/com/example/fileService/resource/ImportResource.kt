@@ -4,6 +4,7 @@ import com.example.fileService.beans.MinIOBean
 import com.example.fileService.model.dto.ImportResult
 import com.example.fileService.model.dto.ImportSummary
 import com.example.fileService.model.dto.SpaceMarineImportRequest
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
@@ -97,8 +98,15 @@ class ImportResource(
 
                 else -> throw IllegalArgumentException("Unsupported content type: $contentType")
             }
+        } catch (e: JsonProcessingException) {
+            // Extract core error message without location details
+            val cleanMessage = e.message
+                ?.substringBefore(" (for ")
+                ?.trim()
+                ?: "Invalid file structure"
+            throw IllegalArgumentException(cleanMessage, e)
         } catch (e: Exception) {
-            throw IllegalArgumentException("Failed to parse file content: ${e.message}", e)
+            throw IllegalArgumentException("Failed to parse file content: ${e.message ?: "Unknown parsing error"}", e)
         }
     }
 
@@ -137,8 +145,7 @@ class ImportResource(
         }
     }
 
-
     private fun processImportRequest(request: SpaceMarineImportRequest) {
-
+        // Implementation would go here
     }
 }
