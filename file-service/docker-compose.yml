@@ -15,6 +15,21 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    networks:
+      - proxy-net
+    env_file:
+      - ../.env
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+    networks:
+      - proxy-net
     env_file:
       - ../.env
 
@@ -23,8 +38,14 @@ services:
       context: .
     ports:
       - "8080:8080"
+    networks:
+      - proxy-net
     env_file:
       - ../.env
 
 volumes:
   minio_data:
+
+networks:
+  proxy-net:
+    driver: bridge

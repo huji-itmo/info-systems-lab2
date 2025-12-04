@@ -10,9 +10,8 @@ class HelloWorldResource {
 
 //    private val logger = LoggerFactory.getLogger(HelloWorldResource::class.java)
 
-    @GetMapping("/")
+    @GetMapping("/api/space-marines/export/hi")
     fun index(): String {
-
         return "Greetings from Spring Boot!"
     }
 }

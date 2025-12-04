@@ -8,7 +8,7 @@ set +a
 # Construct expected JAR filename from env or default
 JAR_NAME="payara-micro-${PAYARA_VERSION:-6.2025.10}.jar"
 
-export DB_HOST=localhost
+export POSTGRES_HOST=localhost
 
 if [ ! -f "$JAR_NAME" ]; then
     echo "Payara Micro JAR not found: $JAR_NAME"

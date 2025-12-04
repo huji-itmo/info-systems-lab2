@@ -10,7 +10,7 @@ services:
       - pg-data:/var/lib/postgresql/data:Z
     environment:
       DB_CONNECTION: pgsql
-      DB_HOST: ${DB_HOST}
+      POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_DB: studs
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_USER: ${POSTGRES_USER}
@@ -25,8 +25,50 @@ services:
       dockerfile: Dockerfile.backend
     depends_on:
       - pg
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
     ports:
-      - "8080:8080"
+      - "9000:9000" # API port
+      - "9001:9001" # Console port
+    volumes:
+      - minio_data:/data
+      - ./config:/root/.minio
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf.template.prod:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  spring:
+    depends_on:
+      - minio
+    build:
+      context: ./file-service
     networks:
       - app-network
     env_file:
@@ -34,6 +76,7 @@ services:
 
 volumes:
   pg-data:
+  minio_data:
 
 networks:
   app-network:

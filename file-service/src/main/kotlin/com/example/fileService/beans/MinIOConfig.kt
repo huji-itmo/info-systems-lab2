@@ -17,8 +17,8 @@ class MinIOConfig {
         val accessKey = System.getenv("MINIO_ROOT_USER")
             ?: throw IllegalStateException("MINIO_ROOT_USER environment variable is required")
 
-        val secretKey = System.getenv("MINIO_SECRET_KEY")
-            ?: throw IllegalStateException("MINIO_SECRET_KEY environment variable is required")
+        val secretKey = System.getenv("MINIO_ROOT_PASSWORD")
+            ?: throw IllegalStateException("MINIO_ROOT_PASSWORD environment variable is required")
 
         return MinioClient.builder()
             .endpoint(minioUrl)

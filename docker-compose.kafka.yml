@@ -10,7 +10,7 @@ services:
       - pg-data:/var/lib/postgresql/data:Z
     environment:
       DB_CONNECTION: pgsql
-      DB_HOST: ${DB_HOST}
+      POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_DB: studs
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_USER: ${POSTGRES_USER}
