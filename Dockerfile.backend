@@ -4,7 +4,7 @@ COPY frontend/ ./
 RUN bun install
 RUN bun run build
 
-FROM gradle:8.14.3-jdk17-alpine AS builder
+FROM gradle:9.2.1-jdk17-alpine AS builder
 WORKDIR /usr/src/
 
 COPY backend/settings.gradle.kts ./
