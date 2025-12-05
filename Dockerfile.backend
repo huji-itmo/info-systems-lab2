@@ -4,16 +4,28 @@ COPY frontend/ ./
 RUN bun install
 RUN bun run build
 
-FROM gradle:8.14.3-jdk17-alpine AS builder
+FROM gradle:9.2.1-jdk17-alpine AS builder
+
 WORKDIR /usr/src/
 
-COPY backend/settings.gradle.kts ./
+# Copy Gradle wrapper files (if you use them) and settings
+COPY backend/settings.gradle.kts .
+# COPY backend/gradle.properties .
+# COPY backend/gradlew .
+COPY backend/gradle gradle/
+
+COPY backend/app/build.gradle.kts app/build.gradle.kts
+
+
+RUN gradle --no-daemon --refresh-dependencies dependencies
 
 COPY backend/app app
 
 COPY --from=frontend-builder /app/out/ app/src/main/webapp/
 
-RUN gradle war --no-daemon
+# Build the WAR
+RUN gradle --no-daemon war
+
 
 FROM payara/micro:6.2025.10-jdk17
 

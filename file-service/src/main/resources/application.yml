@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: fileService
+  datasource:
+    url: jdbc:postgresql://pg:5432/studs
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  kafka:
+    bootstrap-servers: "kafka:9092"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+    properties:
+      spring.json.trusted.packages: "package com.example.fileService.model"
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+
+  topics:
+    upload: "upload"
+
+logging:
+  level:
+    org.springframework: INFO
+    org.springframework.kafka: DEBUG

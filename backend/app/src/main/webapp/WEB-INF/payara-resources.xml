@@ -5,7 +5,7 @@
         res-type="javax.sql.DataSource"
         datasource-classname="org.postgresql.ds.PGSimpleDataSource"
         driver-classname="org.postgresql.Driver">
-        <property name="serverName" value="${ENV=DB_HOST}" />
+        <property name="serverName" value="${ENV=POSTGRES_HOST}" />
         <property name="portNumber" value="5432" />
         <property name="databaseName" value="studs" />
         <property name="user" value="${ENV=POSTGRES_USER}" />
