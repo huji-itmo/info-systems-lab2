@@ -1,7 +1,9 @@
 package com.example.fileService.resource
 
+import com.example.fileService.beans.ImportHistoryService
 import com.example.fileService.beans.KafkaBean
 import com.example.fileService.beans.MinIOBean
+import com.example.fileService.model.ImportHistory
 import com.example.fileService.model.dto.ImportResult
 import com.example.fileService.model.dto.ImportSummary
 import com.example.fileService.model.dto.SpaceMarineImportRequest
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import java.io.InputStream
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/space-marines")
@@ -31,6 +34,7 @@ class ImportResource(
     private val validator: Validator,
     private val minIOBean: MinIOBean,
     private val kafkaBean: KafkaBean,
+    private val importHistoryService: ImportHistoryService,
     private val chapterRepository: ChapterRepository,
     private val coordinatesRepository: CoordinatesRepository
 ) {
@@ -40,47 +44,78 @@ class ImportResource(
 
     @PostMapping("/import")
     fun importSpaceMarines(@RequestParam("file") file: MultipartFile): ResponseEntity<Any> {
+        val startTime = LocalDateTime.now()
+        var uploadedObjectName: String? = null
+        var contentType: String? = null
+        var historyStatus = ImportHistory.ImportStatus.FAILURE
+        var totalRecords: Int? = null
+        var successfulCount = 0
+        var errorMessage: String? = null
+
         logger.info("Import request received for file: ${file.originalFilename}")
 
         try {
-            val uploadedObjectName = minIOBean.uploadFile(file)
+            contentType = determineContentType(file.originalFilename)
+
+            uploadedObjectName = minIOBean.uploadFile(file)
             logger.info("File persisted in MinIO as: $uploadedObjectName")
 
-            val contentType = determineContentType(file.originalFilename)
             val importRequests = parseFile(file.inputStream, contentType)
+            totalRecords = importRequests.size
+            logger.info("Parsed $totalRecords Space Marine records from file")
 
-            logger.info("Parsed ${importRequests.size} Space Marine records from file")
             validateImportRequests(importRequests)
+            val results = processRequests(importRequests)
 
-            val results = importRequests.map { request ->
-                try {
-                    processImportRequest(request)
-                    ImportResult.Success(request)
-                } catch (e: Exception) {
-                    logger.warn("Failed to import ${request.name}: ${e.message}")
-                    ImportResult.Failure(request.name, e.message ?: "Unknown error")
-                }
-            }
+            kafkaBean.sendMessage(results.filterIsInstance<ImportResult.Success>().map { it.request })
 
-            kafkaBean.sendMessage(results.filterIsInstance<ImportResult.Success>().map { request -> request.request })
+            successfulCount = results.count { it is ImportResult.Success }
+            val failedCount = results.count { it is ImportResult.Failure }
+            historyStatus = if (failedCount == 0) ImportHistory.ImportStatus.SUCCESS
+            else ImportHistory.ImportStatus.PARTIAL_SUCCESS
 
             val summary = ImportSummary(
-                total = results.size,
-                successful = results.count { it is ImportResult.Success },
+                total = totalRecords,
+                successful = successfulCount,
                 failed = results.filterIsInstance<ImportResult.Failure>()
+            )
+
+            saveImportHistory(
+                fileName = file.originalFilename ?: "unknown",
+                startTime = startTime,
+                minioObjectName = uploadedObjectName,
+                contentType = contentType,
+                status = historyStatus,
+                totalRecords = totalRecords,
+                successfulCount = successfulCount,
+                failedCount = failedCount
             )
 
             return ResponseEntity.status(HttpStatus.CREATED).body(summary)
 
-        } catch (e: IllegalArgumentException) {
-            logger.warn("Client error during import: ${e.message}")
-            return ResponseEntity.badRequest().body(mapOf("error" to e.message))
         } catch (e: Exception) {
-            logger.error("Unexpected error during import", e)
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Import failed: ${e.message}"))
+            errorMessage = e.message ?: "Unknown error"
+            logger.error("Import failed for file: ${file.originalFilename}", e)
+
+            saveImportHistory(
+                fileName = file.originalFilename ?: "unknown",
+                startTime = startTime,
+                minioObjectName = uploadedObjectName,
+                contentType = contentType,
+                status = historyStatus,
+                totalRecords = totalRecords,
+                successfulCount = successfulCount,
+                failedCount = if (totalRecords != null) totalRecords - successfulCount else 0,
+                errorMessage = errorMessage
+            )
+
+            return when (e) {
+                is IllegalArgumentException -> ResponseEntity.badRequest().body(mapOf("error" to errorMessage))
+                else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("error" to "Import failed: $errorMessage"))
+            }
         }
     }
+
 
     private fun determineContentType(filename: String?): String {
         return when {
@@ -115,6 +150,44 @@ class ImportResource(
             throw IllegalArgumentException(cleanMessage, e)
         } catch (e: Exception) {
             throw IllegalArgumentException("Failed to parse file content: ${e.message ?: "Unknown parsing error"}", e)
+        }
+    }
+
+    private fun saveImportHistory(
+        fileName: String,
+        startTime: LocalDateTime,
+        minioObjectName: String?,
+        contentType: String?,
+        status: ImportHistory.ImportStatus,
+        totalRecords: Int?,
+        successfulCount: Int,
+        failedCount: Int,
+        errorMessage: String? = null
+    ) {
+        val history = ImportHistory(
+            fileName = fileName,
+            minioObjectName = minioObjectName,
+            contentType = contentType,
+            totalRecords = totalRecords,
+            successfulCount = successfulCount,
+            failedCount = failedCount,
+            timestamp = startTime,
+            status = status,
+            errorMessage = errorMessage
+        )
+        importHistoryService.saveHistory(history)
+    }
+
+    // Extracted request processing for better readability
+    private fun processRequests(requests: List<SpaceMarineImportRequest>): List<ImportResult> {
+        return requests.map { request ->
+            try {
+                processImportRequest(request)
+                ImportResult.Success(request)
+            } catch (e: Exception) {
+                logger.warn("Failed to import ${request.name}: ${e.message}")
+                ImportResult.Failure(request.name, e.message ?: "Unknown error")
+            }
         }
     }
 

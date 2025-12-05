@@ -23,6 +23,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    environment:
+      - PAYARA_ARGS=--log-level FINEST
     depends_on:
       - pg
       - kafka

@@ -38,6 +38,8 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.20.1")
+
+    testImplementation("com.h2database:h2")
 }
 
 kotlin {

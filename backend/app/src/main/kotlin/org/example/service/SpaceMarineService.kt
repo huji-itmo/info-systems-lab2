@@ -31,6 +31,9 @@ open class SpaceMarineService {
     @Inject
     private lateinit var coordinatesService: CoordinatesService
 
+    @Inject
+    private lateinit var service: ChapterService
+
     companion object {
         private val logger = Logger.getLogger(SpaceMarineService::class.java.name)
     }

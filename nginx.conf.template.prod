@@ -6,6 +6,11 @@ server {
         proxy_pass http://spring:8080/api/space-marines/import;
     }
 
+    location /api/space-marines/import-history {
+        proxy_pass http://spring:8080/api/space-marines/import-history;
+    }
+
+
     location / {
         proxy_pass http://backend:8080/;
 

@@ -1,10 +1,15 @@
+
+
+
+logging:
+  level:
+    org.springframework: INFO
+    org.springframework.kafka: DEBUG
+
+
 spring:
   application:
     name: fileService
-  datasource:
-    url: jdbc:postgresql://pg:5432/studs
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
   kafka:
     bootstrap-servers: "kafka:9092"
     producer:
@@ -12,17 +17,17 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
     properties:
       spring.json.trusted.packages: "package com.example.fileService.model"
-  jpa:
-    database: postgresql
-    hibernate:
-      ddl-auto: update
-    show-sql: false
 
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # or 'update' — safe since it's in-memory
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
 
   topics:
     upload: "upload"
-
-logging:
-  level:
-    org.springframework: INFO
-    org.springframework.kafka: DEBUG

@@ -4,6 +4,8 @@ WORKDIR /usr/src/
 COPY settings.gradle.kts ./
 COPY build.gradle.kts ./
 
+RUN gradle --no-daemon --refresh-dependencies dependencies
+
 COPY src src
 
 RUN gradle build --no-daemon

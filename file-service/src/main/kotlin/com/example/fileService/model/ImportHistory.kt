@@ -5,13 +5,13 @@ import java.time.LocalDateTime
 
 @Entity
 @Table(name = "import_history")
-class ImportHistory(
+data class ImportHistory (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
 
     @Column(nullable = false)
-    val fileName: String,
+    val fileName: String = "",
 
     @Column(nullable = true)
     val minioObjectName: String? = null,
@@ -28,15 +28,16 @@ class ImportHistory(
     @Column(nullable = false)
     val timestamp: LocalDateTime = LocalDateTime.now(),
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    val status: ImportStatus,
+    @Column(nullable = false)
+    val status: ImportStatus = ImportStatus.FAILURE,
 
     @Column(columnDefinition = "TEXT")
     val errorMessage: String? = null,
 
     @Column(nullable = false)
-    val contentType: String? = null
+    val contentType: String? = ""
+
 ) {
     enum class ImportStatus {
         SUCCESS,          // All records imported
