@@ -28,7 +28,7 @@ data class SpaceMarine(
     @Column(name = "coordinates_id", nullable = false)
     var coordinatesId: Long,
     @field:NotNull
-    @Column(nullable = false, updatable = false)
+    @Column(name = "creation_date", nullable = false, updatable = false)
     @field:JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     var creationDate: LocalDateTime = LocalDateTime.now(),
     @field:NotNull
@@ -45,6 +45,6 @@ data class SpaceMarine(
     var category: AstartesCategory? = null,
     @field:NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "weapon_type", nullable = false)
     var weaponType: Weapon,
 )

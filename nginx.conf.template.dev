@@ -1,0 +1,17 @@
+server {
+    listen 80;
+    server_name ${DOMAIN}; # Replace with your domain/IP
+
+    location /api/space-marines/import {
+        proxy_pass http://host.docker.internal:8081/api/space-marines/import;
+    }
+
+    location /api/space-marines/import-history {
+        proxy_pass http://host.docker.internal:8081/api/space-marines/import-history;
+    }
+
+
+    location / {
+        proxy_pass http://host.docker.internal:8080/;
+    }
+}

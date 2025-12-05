@@ -13,7 +13,7 @@ data class Coordinates(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long = 0,
-    var x: Long,
+    var x: Long = 0,
     @field:Max(343)
-    var y: Float,
+    var y: Float = 0F,
 )

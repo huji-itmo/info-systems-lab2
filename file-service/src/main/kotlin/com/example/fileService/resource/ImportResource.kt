@@ -3,17 +3,24 @@ package com.example.fileService.resource
 import com.example.fileService.beans.ImportHistoryService
 import com.example.fileService.beans.KafkaBean
 import com.example.fileService.beans.MinIOBean
+import com.example.fileService.model.Chapter
+import com.example.fileService.model.Coordinates
 import com.example.fileService.model.ImportHistory
+import com.example.fileService.model.SpaceMarine
+import com.example.fileService.model.dto.ChapterEmbedded
+import com.example.fileService.model.dto.CoordinatesEmbedded
 import com.example.fileService.model.dto.ImportResult
 import com.example.fileService.model.dto.ImportSummary
 import com.example.fileService.model.dto.SpaceMarineImportRequest
 import com.example.fileService.repositories.ChapterRepository
 import com.example.fileService.repositories.CoordinatesRepository
+import com.example.fileService.repositories.SpaceMarineRepository
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import jakarta.transaction.Transactional
 import jakarta.validation.ValidationException
 import jakarta.validation.Validator
 import org.slf4j.Logger
@@ -33,10 +40,11 @@ import java.time.LocalDateTime
 class ImportResource(
     private val validator: Validator,
     private val minIOBean: MinIOBean,
-    private val kafkaBean: KafkaBean,
+//    private val kafkaBean: KafkaBean,
     private val importHistoryService: ImportHistoryService,
     private val chapterRepository: ChapterRepository,
-    private val coordinatesRepository: CoordinatesRepository
+    private val coordinatesRepository: CoordinatesRepository,
+    private val spaceMarineRepository: SpaceMarineRepository
 ) {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(ImportResource::class.java)
@@ -67,7 +75,7 @@ class ImportResource(
             validateImportRequests(importRequests)
             val results = processRequests(importRequests)
 
-            kafkaBean.sendMessage(results.filterIsInstance<ImportResult.Success>().map { it.request })
+//            kafkaBean.sendMessage(results.filterIsInstance<ImportResult.Success>().map { it.request })
 
             successfulCount = results.count { it is ImportResult.Success }
             val failedCount = results.count { it is ImportResult.Failure }
@@ -111,7 +119,8 @@ class ImportResource(
 
             return when (e) {
                 is IllegalArgumentException -> ResponseEntity.badRequest().body(mapOf("error" to errorMessage))
-                else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("error" to "Import failed: $errorMessage"))
+                else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(mapOf("error" to "Import failed: $errorMessage"))
             }
         }
     }
@@ -182,7 +191,7 @@ class ImportResource(
     private fun processRequests(requests: List<SpaceMarineImportRequest>): List<ImportResult> {
         return requests.map { request ->
             try {
-                processImportRequest(request)
+                processAndSaveRequest(request)
                 ImportResult.Success(request)
             } catch (e: Exception) {
                 logger.warn("Failed to import ${request.name}: ${e.message}")
@@ -204,20 +213,51 @@ class ImportResource(
                 errors.add("Record ${index + 1} (${request.name}): ${violations.joinToString { it.message }}")
             }
 
-            // Validate coordinates references
-            if (request.coordinatesId == null && request.coordinates == null) {
-                errors.add("Record ${index + 1} (${request.name}): Must provide either coordinatesId or coordinates object")
-            }
-            if (request.coordinatesId != null && request.coordinates != null) {
-                errors.add("Record ${index + 1} (${request.name}): Cannot provide both coordinatesId and coordinates object")
+            when {
+                request.chapterId == null && request.chapter == null -> {
+                    errors.add("Record ${index + 1} (${request.name}): Must provide either chapterId or chapter object")
+                }
+
+                request.chapterId != null && request.chapter != null -> {
+                    errors.add("Record ${index + 1} (${request.name}): Cannot provide both chapterId and chapter object")
+                }
+
+                request.chapterId != null -> {
+                    if (!chapterRepository.existsById(request.chapterId)) {
+                        errors.add("Record ${index + 1} (${request.name}): Chapter ID ${request.chapterId} does not exist")
+                    }
+                }
+
+                else -> {
+                    val chapterViolations = validator.validate(request.chapter)
+                    if (chapterViolations.isNotEmpty()) {
+                        errors.add("Record ${index + 1} (${request.name}): Embedded chapter validation failed: ${chapterViolations.joinToString { it.message }}")
+                    }
+                }
             }
 
-            // Validate chapter references
-            if (request.chapterId == null && request.chapter == null) {
-                errors.add("Record ${index + 1} (${request.name}): Must provide either chapterId or chapter object")
-            }
-            if (request.chapterId != null && request.chapter != null) {
-                errors.add("Record ${index + 1} (${request.name}): Cannot provide both chapterId and chapter object")
+            // Validate coordinates references
+            when {
+                request.coordinatesId == null && request.coordinates == null -> {
+                    errors.add("Record ${index + 1} (${request.name}): Must provide either coordinatesId or coordinates object")
+                }
+
+                request.coordinatesId != null && request.coordinates != null -> {
+                    errors.add("Record ${index + 1} (${request.name}): Cannot provide both coordinatesId and coordinates object")
+                }
+
+                request.coordinatesId != null -> {
+                    if (!coordinatesRepository.existsById(request.coordinatesId)) {
+                        errors.add("Record ${index + 1} (${request.name}): Coordinates ID ${request.coordinatesId} does not exist")
+                    }
+                }
+
+                else -> {
+                    val coordinatesViolations = validator.validate(request.coordinates)
+                    if (coordinatesViolations.isNotEmpty()) {
+                        errors.add("Record ${index + 1} (${request.name}): Embedded coordinates validation failed: ${coordinatesViolations.joinToString { it.message }}")
+                    }
+                }
             }
         }
 
@@ -226,17 +266,55 @@ class ImportResource(
         }
     }
 
-    private fun processImportRequest(request: SpaceMarineImportRequest) {
-        request.chapterId?.let { chapterId ->
-            if (!chapterRepository.existsById(chapterId)) {
-                throw IllegalArgumentException("Chapter ID $chapterId does not exist")
-            }
+    @Transactional
+    private fun processAndSaveRequest(request: SpaceMarineImportRequest) {
+        val chapterId = createOrGetChapter(request.chapter, request.coordinatesId)
+
+        val coordinatesId = createOrGetCoordinates(request.coordinates, request.coordinatesId);
+
+        val spaceMarine = SpaceMarine(
+            name = request.name,
+            health = request.health,
+            category = request.category,
+            chapterId = chapterId,
+            coordinatesId = coordinatesId,
+            weaponType = request.weaponType,
+            loyal = request.loyal
+        )
+        spaceMarineRepository.save(spaceMarine)
+    }
+
+    private fun createOrGetChapter(chapterDto: ChapterEmbedded?, chapterId: Long?): Long {
+        if (chapterId != null && chapterRepository.findById(chapterId).isPresent) {
+            return chapterId;
         }
 
-        request.coordinatesId?.let { coordinatesId ->
-            if (!coordinatesRepository.existsById(coordinatesId)) {
-                throw IllegalArgumentException("Coordinates ID $coordinatesId does not exist")
-            }
+        if (chapterDto == null) {
+            throw IllegalStateException("Chapter and chapter ID null")
         }
+
+        return chapterRepository.save(
+            Chapter(
+                name = chapterDto.name,
+                marinesCount = chapterDto.marinesCount
+            )
+        ).id
+    }
+
+    private fun createOrGetCoordinates(coordinatesDto: CoordinatesEmbedded?, coordinatesId: Long?): Long {
+        if (coordinatesId != null && coordinatesRepository.findById(coordinatesId).isPresent) {
+            return coordinatesId;
+        }
+
+        if (coordinatesDto == null) {
+            throw IllegalStateException("Coordinates and CoordinateID null")
+        }
+
+        return coordinatesRepository.save(
+            Coordinates(
+                x = coordinatesDto.x,
+                y = coordinatesDto.y
+            )
+        ).id
     }
 }

@@ -1,5 +1,6 @@
 package com.example.fileService.model
 
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -14,10 +15,11 @@ import jakarta.validation.constraints.Positive
 data class Chapter(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
+    var id: Long = 1,
     @field:NotBlank
-    var name: String,
+    var name: String = "chapter",
     @field:Positive
     @field:Max(1000)
-    var marinesCount: Long,
+    @Column(name = "marines_count")
+    var marinesCount: Long = 100,
 )
