@@ -1,9 +1,12 @@
 package com.example.fileService.resource
 
+import com.example.fileService.beans.KafkaBean
 import com.example.fileService.beans.MinIOBean
 import com.example.fileService.model.dto.ImportResult
 import com.example.fileService.model.dto.ImportSummary
 import com.example.fileService.model.dto.SpaceMarineImportRequest
+import com.example.fileService.repositories.ChapterRepository
+import com.example.fileService.repositories.CoordinatesRepository
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -26,7 +29,10 @@ import java.io.InputStream
 @RequestMapping("/api/space-marines")
 class ImportResource(
     private val validator: Validator,
-    private val minIOBean: MinIOBean
+    private val minIOBean: MinIOBean,
+    private val kafkaBean: KafkaBean,
+    private val chapterRepository: ChapterRepository,
+    private val coordinatesRepository: CoordinatesRepository
 ) {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(ImportResource::class.java)
@@ -49,12 +55,14 @@ class ImportResource(
             val results = importRequests.map { request ->
                 try {
                     processImportRequest(request)
-                    ImportResult.Success(request.name)
+                    ImportResult.Success(request)
                 } catch (e: Exception) {
                     logger.warn("Failed to import ${request.name}: ${e.message}")
                     ImportResult.Failure(request.name, e.message ?: "Unknown error")
                 }
             }
+
+            kafkaBean.sendMessage(results.filterIsInstance<ImportResult.Success>().map { request -> request.request })
 
             val summary = ImportSummary(
                 total = results.size,
@@ -146,6 +154,16 @@ class ImportResource(
     }
 
     private fun processImportRequest(request: SpaceMarineImportRequest) {
-        // Implementation would go here
+        request.chapterId?.let { chapterId ->
+            if (!chapterRepository.existsById(chapterId)) {
+                throw IllegalArgumentException("Chapter ID $chapterId does not exist")
+            }
+        }
+
+        request.coordinatesId?.let { coordinatesId ->
+            if (!coordinatesRepository.existsById(coordinatesId)) {
+                throw IllegalArgumentException("Coordinates ID $coordinatesId does not exist")
+            }
+        }
     }
 }

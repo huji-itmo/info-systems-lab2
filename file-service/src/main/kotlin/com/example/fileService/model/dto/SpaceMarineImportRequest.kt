@@ -36,9 +36,9 @@ data class SpaceMarineImportRequest(
     val weaponType: Weapon
 )
 
-sealed class ImportResult(open val name: String) {
-    data class Success(override val name: String) : ImportResult(name)
-    data class Failure(override val name: String, val reason: String) : ImportResult(name)
+sealed class ImportResult(open val name: String, open val request: SpaceMarineImportRequest?) {
+    data class Success(override val request: SpaceMarineImportRequest) : ImportResult(request.name, request)
+    data class Failure(override val name: String, val reason: String) : ImportResult(name, null)
 }
 
 data class ImportSummary(

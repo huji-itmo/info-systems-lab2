@@ -1,4 +1,4 @@
-package org.example.exception.handler
+package org.example.exception.handler.com.example.fileService
 
 import com.example.fileService.exceptions.NotFoundException
 import jakarta.validation.ConstraintViolation

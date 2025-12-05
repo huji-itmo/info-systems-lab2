@@ -8,13 +8,17 @@ import jakarta.transaction.Transactional
 import jakarta.validation.Valid
 import org.example.exceptions.NotFoundException
 import org.example.model.AstartesCategory
+import org.example.model.Chapter
+import org.example.model.Coordinates
 import org.example.model.dto.Page
 import org.example.model.SpaceMarine
 import org.example.model.Weapon
 import org.example.model.dto.SpaceMarineCreateRequest
+import org.example.model.dto.SpaceMarineImportRequest
 import org.example.model.dto.SpaceMarineUpdateRequest
 import java.util.logging.Logger
 import kotlin.math.ceil
+import kotlin.toString
 
 @ApplicationScoped
 open class SpaceMarineService {
@@ -23,6 +27,9 @@ open class SpaceMarineService {
 
     @Inject
     private lateinit var chapterService: ChapterService
+
+    @Inject
+    private lateinit var coordinatesService: CoordinatesService
 
     companion object {
         private val logger = Logger.getLogger(SpaceMarineService::class.java.name)
@@ -223,5 +230,51 @@ open class SpaceMarineService {
         logger.info("Calculating average health value")
         val avg = em.createQuery("SELECT AVG(s.health) FROM SpaceMarine s", Double::class.java).singleResult
         return avg ?: 0.0
+    }
+
+    open fun processImportRequest(request: SpaceMarineImportRequest): SpaceMarine {
+        val coordinatesId = when {
+            request.coordinatesId != null -> {
+                request.coordinatesId
+            }
+            request.coordinates != null -> {
+                val newCoords = coordinatesService.create(
+                    Coordinates(
+                        x = request.coordinates.x,
+                        y = request.coordinates.y
+                    )
+                )
+                newCoords.id
+            }
+            else -> throw IllegalArgumentException("No coordinates reference provided for ${request.name}")
+        }
+
+        val chapterId = when {
+            request.chapterId != null -> {
+                request.chapterId
+            }
+            request.chapter != null -> {
+                val newChapter = chapterService.create(
+                    Chapter(
+                        name = request.chapter.name,
+                        marinesCount = request.chapter.marinesCount
+                    )
+                )
+                newChapter.id
+            }
+            else -> throw IllegalArgumentException("No chapter reference provided for ${request.name}")
+        }
+
+        return create(
+            SpaceMarineCreateRequest(
+                name = request.name,
+                coordinatesId = coordinatesId,
+                chapterId = chapterId,
+                health = request.health,
+                loyal = request.loyal,
+                category = request.category.toString(),
+                weaponType = request.weaponType.toString()
+            )
+        )
     }
 }
