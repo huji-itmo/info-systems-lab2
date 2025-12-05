@@ -1,4 +1,4 @@
-package org.example.model.dto
+package com.example.fileService.model.dto
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.example.fileService.model.AstartesCategory

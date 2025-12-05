@@ -1,0 +1,20 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf.template.dev:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+volumes:
+  pg-data:
+  minio_data:
+
+networks:
+  app-network:
+    driver: bridge

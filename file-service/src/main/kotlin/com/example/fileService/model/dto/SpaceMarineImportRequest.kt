@@ -7,8 +7,6 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import com.example.fileService.model.AstartesCategory
 import com.example.fileService.model.Weapon
-import org.example.model.dto.ChapterEmbedded
-import org.example.model.dto.CoordinatesEmbedded
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SpaceMarineImportRequest(

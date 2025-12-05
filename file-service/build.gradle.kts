@@ -3,6 +3,8 @@ plugins {
 	kotlin("plugin.spring") version "2.2.21"
 	id("org.springframework.boot") version "4.0.0"
 	id("io.spring.dependency-management") version "1.1.7"
+    kotlin("plugin.allopen") version "2.2.20"
+    kotlin("plugin.noarg") version "2.2.20"
 }
 
 group = "com.example"
@@ -54,4 +56,16 @@ tasks.withType<Test> {
 
 tasks.jar {
     enabled = false
+}
+
+allOpen {
+    annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.enterprise.context.RequestScoped")
+    annotation("jakarta.persistence.Entity")
+}
+
+noArg {
+    annotation("jakarta.enterprise.context.RequestScoped")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.persistence.Entity")
 }

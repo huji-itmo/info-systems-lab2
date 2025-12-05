@@ -18,8 +18,6 @@ dependencies {
 
     implementation("org.postgresql:postgresql:42.7.3")
 
-    implementation("org.apache.kafka:kafka-clients:4.1.1")
-
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")

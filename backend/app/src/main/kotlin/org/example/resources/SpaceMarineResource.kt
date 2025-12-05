@@ -38,7 +38,6 @@ import org.example.model.dto.createExportResponse
 import org.example.model.dto.toEmbedded
 import org.example.service.ChapterService
 import org.example.service.CoordinatesService
-import org.example.service.KafkaListenerService
 import org.example.service.SpaceMarineService
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition
 import org.glassfish.jersey.media.multipart.FormDataParam
@@ -58,9 +57,6 @@ open class SpaceMarineResource {
 
     @Inject
     private lateinit var chapterService: ChapterService
-
-    @Inject
-    private lateinit var listenerService: KafkaListenerService
 
 
     companion object {
