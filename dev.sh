@@ -1,6 +1,4 @@
 
-./gradlew \
-    file-service:jibDockerBuild --image="info-systems-lab2/file-service:jib-dev" \
-    backend:jibDockerBuild --image="info-systems-lab2/backend:jib-dev"
+./gradlew :file-service:jibDockerBuild :backend:jibDockerBuild
 
 docker compose -f docker-compose.dev.yml up --build
