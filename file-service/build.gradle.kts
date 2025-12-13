@@ -5,10 +5,18 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.7"
     kotlin("plugin.allopen") version "2.2.20"
     kotlin("plugin.noarg") version "2.2.20"
+
+    id("com.google.cloud.tools.jib") version "3.5.2"
 }
 
 group = "com.example"
 description = "Demo project for Spring Boot"
+
+jib {
+    to {
+        image="info-systems-lab2/file-service:jib-dev"
+    }
+}
 
 java {
 	toolchain {

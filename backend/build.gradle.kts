@@ -4,6 +4,23 @@ plugins {
     kotlin("plugin.allopen") version "2.2.20"
     kotlin("plugin.noarg") version "2.2.20"
     kotlin("plugin.jpa") version "2.2.20"
+
+    id("com.google.cloud.tools.jib") version "3.5.2"
+}
+
+jib {
+    to.image = "info-systems-lab2/backend:jib-dev"
+    from.image = "payara/micro:6.2025.10-jdk17"
+    container {
+        appRoot = "/opt/payara/app"
+        args = listOf(
+            "--deploy", "/opt/payara/app/",
+            "--port", "8080",
+            "--contextroot", "/"
+        )
+        ports = listOf("8080")
+    }
+
 }
 
 repositories {

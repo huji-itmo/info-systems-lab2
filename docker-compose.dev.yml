@@ -1,0 +1,119 @@
+services:
+  pg:
+    image: postgres:16.6
+    networks:
+      - app-network
+    shm_size: 128mb
+    ports:
+      - 5432:5432
+    volumes:
+      - pg-data:/var/lib/postgresql/data:Z
+    environment:
+      DB_CONNECTION: pgsql
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_DB: studs
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    env_file:
+      - .env
+
+  backend:
+    image: info-systems-lab2/backend:jib-dev
+    environment:
+      - PAYARA_ARGS=--log-level FINEST
+    depends_on:
+      - pg
+      # - kafka
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000" # API port
+      - "9001:9001" # Console port
+    volumes:
+      - minio_data:/data
+      - ./config:/root/.minio
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf.template.prod:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  spring:
+    image: info-systems-lab2/file-service:jib-dev
+    depends_on:
+      # - kafka
+      - minio
+      - pg
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  # zookeeper:
+  #   image: confluentinc/cp-zookeeper:7.4.0
+  #   environment:
+  #     ZOOKEEPER_CLIENT_PORT: 2181
+  #     ALLOW_ANONYMOUS_LOGIN: yes
+  #   networks:
+  #     - app-network
+
+  # kafka:
+  #   image: confluentinc/cp-kafka:7.4.0
+  #   ports:
+  #     - "9092:9092" # External port mapping
+  #   environment:
+  #     KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:29092
+  #     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #     ALLOW_PLAINTEXT_LISTENER: "yes"
+  #   depends_on:
+  #     zookeeper:
+  #       condition: service_started
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "kafka-broker-api-versions",
+  #         "--bootstrap-server",
+  #         "localhost:9092",
+  #       ]
+  #     interval: 5s
+  #     timeout: 10s
+  #     retries: 20
+  #   networks:
+  #     - app-network
+
+volumes:
+  pg-data:
+  minio_data:
+
+networks:
+  app-network:
+    driver: bridge

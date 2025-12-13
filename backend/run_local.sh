@@ -18,8 +18,6 @@ else
     echo "Payara Micro JAR found: $JAR_NAME"
 fi
 
-./gradlew war
-
 java -Xmx1024m -Xms512m \
     -Djava.net.preferIPv4Stack=true \
     -Dorg.example.level=FINE \
