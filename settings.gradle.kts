@@ -3,5 +3,4 @@ plugins {
 }
 
 rootProject.name = "info-systems-lab2"
-include("file-service")
-include("backend")
+include("file-service", "payara-service")

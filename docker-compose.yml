@@ -19,10 +19,10 @@ services:
     env_file:
       - .env
 
-  backend:
+  payara-service:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile.payara-service
     environment:
       - PAYARA_ARGS=--log-level FINEST
     depends_on:

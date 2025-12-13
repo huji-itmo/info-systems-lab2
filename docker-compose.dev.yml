@@ -19,8 +19,8 @@ services:
     env_file:
       - .env
 
-  backend:
-    image: info-systems-lab2/backend:jib-dev
+  payara-service:
+    image: info-systems-lab2/payara-service:jib-dev
     environment:
       - PAYARA_ARGS=--log-level FINEST
     depends_on:
