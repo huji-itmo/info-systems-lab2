@@ -4,6 +4,11 @@
 package org.example
 
 import kotlin.test.Test
-import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 
-class AppTest
+class AppTest {
+    @Test
+    fun testApp() {
+        assertEquals(4, 2 + 2)
+    }
+}
