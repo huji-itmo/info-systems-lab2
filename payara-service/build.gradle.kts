@@ -1,10 +1,9 @@
 plugins {
     id("war")
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.2.21"
     kotlin("plugin.allopen") version "2.2.20"
     kotlin("plugin.noarg") version "2.2.20"
     kotlin("plugin.jpa") version "2.2.20"
-
     id("com.google.cloud.tools.jib") version "3.5.2"
 }
 
@@ -43,6 +42,8 @@ dependencies {
 
     implementation("org.glassfish.jersey.media:jersey-media-json-jackson:3.1.0")
     implementation("org.glassfish.jersey.media:jersey-media-multipart:4.0.0")
+
+    implementation(project(":library-shared"))
 }
 
 testing {

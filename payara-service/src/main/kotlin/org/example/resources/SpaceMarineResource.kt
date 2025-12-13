@@ -1,14 +1,8 @@
 package org.example.resources
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.validation.Valid
-import jakarta.validation.Validator
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.DefaultValue
@@ -19,29 +13,18 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
-import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA
 import jakarta.ws.rs.core.Response
-import jakarta.ws.rs.core.StreamingOutput
 import org.example.exceptions.NotFoundException
-import org.example.model.Chapter
-import org.example.model.Coordinates
-import org.example.model.dto.Page
-import org.example.model.SpaceMarine
-import org.example.model.dto.ImportResult
-import org.example.model.dto.ImportSummary
-import org.example.model.dto.SpaceMarineCreateRequest
-import org.example.model.dto.SpaceMarineImportRequest
-import org.example.model.dto.SpaceMarineUpdateRequest
-import org.example.model.dto.createExportResponse
-import org.example.model.dto.toEmbedded
+import org.example.shared.model.dto.Page
+import org.example.shared.model.SpaceMarine
+import org.example.shared.model.dto.SpaceMarineCreateRequest
+import org.example.shared.model.dto.SpaceMarineUpdateRequest
+import org.example.shared.model.dto.createExportResponse
+import org.example.shared.model.dto.toEmbedded
 import org.example.service.ChapterService
 import org.example.service.CoordinatesService
 import org.example.service.SpaceMarineService
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition
-import org.glassfish.jersey.media.multipart.FormDataParam
-import java.io.InputStream
 import java.util.logging.Logger
 
 @Path("/space-marines")

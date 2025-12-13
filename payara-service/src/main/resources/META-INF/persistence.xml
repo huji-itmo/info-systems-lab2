@@ -6,6 +6,11 @@
 
     <persistence-unit name="my-pu" transaction-type="JTA">
         <jta-data-source>java:app/jdbc/studsDS</jta-data-source>
+        <class>org.example.shared.model.SpaceMarine</class>
+        <class>org.example.shared.model.Coordinates</class>
+        <class>org.example.shared.model.Chapter</class>
+
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
         <properties>
             <!-- EclipseLink -->

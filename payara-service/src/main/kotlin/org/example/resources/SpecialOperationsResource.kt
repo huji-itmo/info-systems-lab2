@@ -13,9 +13,9 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.example.model.dto.Page
-import org.example.model.SpaceMarine
-import org.example.model.Weapon
+import org.example.shared.model.dto.Page
+import org.example.shared.model.SpaceMarine
+import org.example.shared.model.Weapon
 import org.example.service.ChapterService
 import org.example.service.SpaceMarineService
 import java.util.logging.Logger

@@ -19,12 +19,12 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.example.exceptions.NotFoundException
-import org.example.model.Chapter
-import org.example.model.dto.Page
+import org.example.shared.model.Chapter
+import org.example.shared.model.dto.Page
 import org.example.service.ChapterService
 import java.util.logging.Logger
 import jakarta.ws.rs.core.StreamingOutput
-import org.example.model.dto.createExportResponse
+import org.example.shared.model.dto.createExportResponse
 
 @Path("/chapters")
 @Produces(MediaType.APPLICATION_JSON)

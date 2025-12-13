@@ -6,8 +6,8 @@ import jakarta.persistence.PersistenceContext
 import jakarta.transaction.Transactional
 import jakarta.validation.Valid
 import org.example.exceptions.NotFoundException
-import org.example.model.Chapter
-import org.example.model.dto.Page
+import org.example.shared.model.Chapter
+import org.example.shared.model.dto.Page
 import kotlin.math.ceil
 
 @ApplicationScoped

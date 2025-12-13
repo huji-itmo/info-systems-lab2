@@ -20,9 +20,9 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.StreamingOutput
 import org.example.exceptions.NotFoundException
-import org.example.model.Coordinates
-import org.example.model.dto.Page
-import org.example.model.dto.createExportResponse
+import org.example.shared.model.Coordinates
+import org.example.shared.model.dto.Page
+import org.example.shared.model.dto.createExportResponse
 import org.example.service.CoordinatesService
 import java.util.logging.Logger
 

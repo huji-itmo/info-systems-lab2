@@ -1,10 +1,12 @@
 plugins {
-	kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.allopen") version "2.2.20"
+    kotlin("plugin.noarg") version "2.2.20"
+    kotlin("plugin.jpa") version "2.2.20"
+
 	kotlin("plugin.spring") version "2.2.21"
 	id("org.springframework.boot") version "4.0.0"
 	id("io.spring.dependency-management") version "1.1.7"
-    kotlin("plugin.allopen") version "2.2.20"
-    kotlin("plugin.noarg") version "2.2.20"
 
     id("com.google.cloud.tools.jib") version "3.5.2"
 }
@@ -48,6 +50,8 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.20.1")
+
+    implementation(project(":library-shared"))
 
     testImplementation("com.h2database:h2")
 }
