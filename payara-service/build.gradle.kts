@@ -34,6 +34,8 @@ dependencies {
 
     implementation("org.postgresql:postgresql:42.7.3")
 
+    implementation("com.zaxxer:HikariCP:7.0.2")
+
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
