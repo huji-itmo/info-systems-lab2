@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
+import { PaginatedResponse } from '@/types/api';
 import { components } from '@/types/api.types';
 import {
   useMutation,
@@ -8,13 +9,6 @@ import {
 } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 
-export interface PaginatedResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
 type CoordinatesWithId = components['schemas']['CoordinatesWithId'];
 
 export const useCoordinates = (

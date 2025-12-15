@@ -1,17 +1,15 @@
 package com.example.fileService.resource
 
 import com.example.fileService.beans.ImportHistoryService
-import com.example.fileService.beans.KafkaBean
 import com.example.fileService.beans.MinIOBean
-import com.example.fileService.model.Chapter
-import com.example.fileService.model.Coordinates
+import org.example.shared.model.Coordinates
 import com.example.fileService.model.ImportHistory
-import com.example.fileService.model.SpaceMarine
-import com.example.fileService.model.dto.ChapterEmbedded
-import com.example.fileService.model.dto.CoordinatesEmbedded
-import com.example.fileService.model.dto.ImportResult
-import com.example.fileService.model.dto.ImportSummary
-import com.example.fileService.model.dto.SpaceMarineImportRequest
+import org.example.shared.model.SpaceMarine
+import org.example.shared.model.dto.ChapterEmbedded
+import org.example.shared.model.dto.CoordinatesEmbedded
+import com.example.fileService.model.ImportResult
+import com.example.fileService.model.ImportSummary
+import com.example.fileService.model.SpaceMarineImportRequest
 import com.example.fileService.repositories.ChapterRepository
 import com.example.fileService.repositories.CoordinatesRepository
 import com.example.fileService.repositories.SpaceMarineRepository
@@ -23,9 +21,9 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import jakarta.transaction.Transactional
 import jakarta.validation.ValidationException
 import jakarta.validation.Validator
+import org.example.shared.model.Chapter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.*
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -40,7 +38,6 @@ import java.time.LocalDateTime
 class ImportResource(
     private val validator: Validator,
     private val minIOBean: MinIOBean,
-//    private val kafkaBean: KafkaBean,
     private val importHistoryService: ImportHistoryService,
     private val chapterRepository: ChapterRepository,
     private val coordinatesRepository: CoordinatesRepository,
@@ -223,7 +220,7 @@ class ImportResource(
                 }
 
                 request.chapterId != null -> {
-                    if (!chapterRepository.existsById(request.chapterId)) {
+                    if (!chapterRepository.existsById(request.chapterId!!)) {
                         errors.add("Record ${index + 1} (${request.name}): Chapter ID ${request.chapterId} does not exist")
                     }
                 }
@@ -247,7 +244,7 @@ class ImportResource(
                 }
 
                 request.coordinatesId != null -> {
-                    if (!coordinatesRepository.existsById(request.coordinatesId)) {
+                    if (!coordinatesRepository.existsById(request.coordinatesId!!)) {
                         errors.add("Record ${index + 1} (${request.name}): Coordinates ID ${request.coordinatesId} does not exist")
                     }
                 }

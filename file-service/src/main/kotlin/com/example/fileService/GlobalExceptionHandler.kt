@@ -3,8 +3,8 @@ package org.example.exception.handler.com.example.fileService
 import com.example.fileService.exceptions.NotFoundException
 import jakarta.validation.ConstraintViolation
 import jakarta.validation.ConstraintViolationException
-import org.example.model.dto.ErrorResponse
-import org.example.model.dto.FieldError
+import org.example.shared.model.dto.ErrorResponse
+import org.example.shared.model.dto.FieldError
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice

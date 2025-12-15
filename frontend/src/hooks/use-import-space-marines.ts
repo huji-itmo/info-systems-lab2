@@ -40,7 +40,7 @@ export function useImportSpaceMarines() {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['space-marines'] });
       queryClient.invalidateQueries({ queryKey: ['health'] });
-
+      queryClient.invalidateQueries({ queryKey: ['import-history'] });
       // Show success toast with summary
       toast.success(
         `Import completed: ${data.successful} successful, ${data.failed.length} failed`,

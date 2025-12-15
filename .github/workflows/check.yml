@@ -1,48 +1,46 @@
 name: Build
 
 on:
-    pull_request:
-        branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-    build:
-        name: Build war
-        runs-on: ubuntu-latest
+  build:
+    name: Build war
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            # Set up Java 17 for Gradle
-            - name: Set up JDK 17
-              uses: actions/setup-java@v4
-              with:
-                  java-version: "17"
-                  distribution: "oracle"
+      # Set up Java 17 for Gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "oracle"
 
-            - name: Set up Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Build frontend
-              run: |
-                  cd frontend
-                  bun i --frozen-lockfile
-                  bun run build
+      - name: Build frontend
+        run: |
+          cd frontend
+          bun i --frozen-lockfile
+          bun run build
 
-            # Cache Gradle dependencies
-            - name: Cache Gradle
-              uses: gradle/actions/setup-gradle@v4
+      # Cache Gradle dependencies
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-            # Copy frontend into backend (if needed)
-            - name: Prepare backend with frontend assets
-              run: |
-                  mkdir -p backend/app/src/main/webapp
-                  cp -r frontend/out/* backend/app/src/main/webapp/
+      - name: Prepare payara-service with frontend assets
+        run: |
+          mkdir -p payara-service/src/main/webapp
+          cp -r frontend/out/* payara-service/src/main/webapp/
 
-            # Build WAR
-            - name: Build WAR with Gradle
-              run: |
-                  cd backend
-                  ./gradlew war --no-daemon
+      # Build WAR
+      - name: Build WAR with Gradle
+        run: |
+          ./gradlew :payara-service:war --no-daemon

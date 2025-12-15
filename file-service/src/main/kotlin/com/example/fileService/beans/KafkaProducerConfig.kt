@@ -1,6 +1,6 @@
 package com.example.fileService.beans
 
-import com.example.fileService.model.dto.SpaceMarineImportRequest
+import com.example.fileService.model.SpaceMarineImportRequest
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value

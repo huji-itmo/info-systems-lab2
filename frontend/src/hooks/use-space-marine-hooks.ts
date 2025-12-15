@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiClient } from '@/lib/apiClient';
+import { PaginatedResponse } from '@/types/api';
 
 // ===== TYPE DEFINITIONS =====
 export type WeaponType =
@@ -43,14 +44,6 @@ export interface Chapter {
   id?: number;
   name: string;
   marinesCount: number;
-}
-
-export interface PaginatedResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
 }
 
 // ===== SPECIAL OPERATIONS HOOKS =====

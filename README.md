@@ -1,13 +1,7 @@
 for running dev env:
 
 ```
-cd frontend
-bun run dev
-cd ..
-
-cd backend
-docker compose up
-sh run_local.sh
+./dev.sh
 ```
 
 for running prod env:

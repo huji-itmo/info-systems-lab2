@@ -1,0 +1,21 @@
+FROM gradle:9.2.1-jdk17-alpine AS builder
+WORKDIR /usr/src/
+
+COPY settings.gradle.kts ./
+COPY file-service/build.gradle.kts ./file-service/build.gradle.kts
+
+RUN gradle --no-daemon --refresh-dependencies dependencies
+
+COPY file-service/src file-service/src
+
+RUN gradle :file-service:build --no-daemon
+
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+COPY --from=builder /usr/src/file-service/build/libs/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

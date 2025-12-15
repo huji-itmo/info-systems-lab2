@@ -1575,6 +1575,12 @@ components:
     # === IMPORT HISTORY ===
     ImportHistory:
       type: object
+      required:
+        - timestamp
+        - fileName
+        - successfulCount
+        - failedCount
+        - status
       properties:
         id:
           type: integer
@@ -1587,48 +1593,34 @@ components:
         fileName:
           type: string
           description: Name of imported file
-        total:
+        minioObjectName:
+          type: string
+          nullable: true
+          description: Name of the object in MinIO storage
+        contentType:
+          type: string
+          nullable: true
+          description: Content type of the imported file (application/json or application/xml)
+        totalRecords:
           type: integer
           format: int32
+          nullable: true
           description: Total records processed
-        successful:
+        successfulCount:
           type: integer
           format: int32
+          minimum: 0
           description: Successfully imported records
-        failed:
+        failedCount:
           type: integer
           format: int32
+          minimum: 0
           description: Failed imports
         status:
           type: string
-          enum: [COMPLETED, PARTIAL_SUCCESS, FAILED]
+          enum: [SUCCESS, PARTIAL_SUCCESS, FAILURE]
           description: Overall import status
-    PaginatedImportHistoryResponse:
-      type: object
-      required:
-        - content
-        - page
-        - size
-        - totalElements
-        - totalPages
-      properties:
-        content:
-          type: array
-          items:
-            $ref: "#/components/schemas/ImportHistory"
-        page:
-          type: integer
-          format: int32
-          minimum: 0
-        size:
-          type: integer
-          format: int32
-          minimum: 1
-        totalElements:
-          type: integer
-          format: int64
-          minimum: 0
-        totalPages:
-          type: integer
-          format: int32
-          minimum: 0
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if import failed

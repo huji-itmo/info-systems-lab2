@@ -7,13 +7,8 @@ import {
 import { apiClient } from '@/lib/apiClient';
 import { AxiosError } from 'axios';
 import { components } from '@/types/api.types';
-export interface PaginatedResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
+import { PaginatedResponse } from '@/types/api';
+
 type ChapterWithId = components['schemas']['ChapterWithId'];
 
 // Get all chapters with pagination

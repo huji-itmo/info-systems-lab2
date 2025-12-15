@@ -1,6 +1,6 @@
 package com.example.fileService.beans
 
-import com.example.fileService.model.dto.SpaceMarineImportRequest
+import com.example.fileService.model.SpaceMarineImportRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Scope

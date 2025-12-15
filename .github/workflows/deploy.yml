@@ -35,24 +35,20 @@ jobs:
       - name: Cache Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Copy frontend into backend (if needed)
-      - name: Prepare backend with frontend assets
+      - name: Prepare payara-service with frontend assets
         run: |
-          mkdir -p backend/app/src/main/webapp
-          cp -r frontend/out/* backend/app/src/main/webapp/
+          mkdir -p payara-service/src/main/webapp
+          cp -r frontend/out/* payara-service/src/main/webapp/
 
-      # Build WAR
       - name: Build WAR with Gradle
         run: |
-          cd backend
-          ./gradlew war --no-daemon
+          ./gradlew :payara-service:war --no-daemon
 
-      # Upload WAR as artifact (optional)
       - name: Upload WAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-war
-          path: backend/app/build/libs/*.war
+          path: payara-service/build/libs/*.war
 
       - name: Set up SSH
         run: |
@@ -67,7 +63,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
           DEPLOY_FOLDER: ~/info-systems-lab2
-        run: sshpass -e scp -P "${{ secrets.SSH_PORT || 22 }}" backend/app/build/libs/*.war "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}":${{env.DEPLOY_FOLDER}}/
+        run: sshpass -e scp -P "${{ secrets.SSH_PORT || 22 }}" payara-service/build/libs/*.war "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}":${{env.DEPLOY_FOLDER}}/
 
   deploy-run:
     needs: scp-war
